@@ -391,7 +391,15 @@
             <option value="cover">铺满裁切：适合视觉入口图</option>
             <option value="contain">完整留白：适合必须保留全部文字</option>
           </select>
-          <div class="hint">每个尺寸可通过 demo/参数微调；如果 demo 比例与目标一致，工具会以 demo 作为构图参考。</div>
+          <div class="hint">每个尺寸可通过 demo/参数微调；如果 demo 只是风格参考，会默认按目标尺寸等比裁切居中填充。</div>
+        </div>
+        <div class="field">
+          <label for="outputFormat">输出格式</label>
+          <select id="outputFormat">
+            <option value="image/png">PNG：适合透明或高保真入口图</option>
+            <option value="image/jpeg">JPEG：适合照片类入口图</option>
+          </select>
+          <div class="hint">生成后会使用 Canvas 转为对应 data URL，并为每个尺寸生成下载链接。</div>
         </div>
       </div>
       <div class="preview-box" id="masterPreview">
@@ -519,6 +527,7 @@
     const masterInput = document.querySelector('#masterInput');
     const masterPreview = document.querySelector('#masterPreview');
     const fitMode = document.querySelector('#fitMode');
+    const outputFormat = document.querySelector('#outputFormat');
     const sizeList = document.querySelector('#sizeList');
     const template = document.querySelector('#sizeTemplate');
     const resultGrid = document.querySelector('#resultGrid');
@@ -722,53 +731,80 @@
       }
 
       const demo = state.demoImages.get(size.id);
-      const mode = size.mode === 'auto' ? fitMode.value : size.mode;
-      const focus = inferFocusFromDemo(size, demo);
-      const draw = mode === 'contain'
+      const layout = inferLayoutFromDemo(size, demo);
+      const draw = layout.mode === 'contain'
         ? getContainRect(state.masterImage, canvas.width, canvas.height)
-        : getCoverRect(state.masterImage, canvas.width, canvas.height, focus.x, focus.y);
+        : getCoverRect(state.masterImage, canvas.width, canvas.height, layout.focus.x, layout.focus.y);
 
       context.drawImage(state.masterImage, draw.sx, draw.sy, draw.sw, draw.sh, draw.dx, draw.dy, draw.dw, draw.dh);
 
-      const url = canvas.toDataURL('image/png');
+      const mimeType = outputFormat.value;
+      const extension = mimeType === 'image/jpeg' ? 'jpg' : 'png';
+      const url = canvas.toDataURL(mimeType, 0.92);
       return {
         url,
         name: size.name,
         width: size.width,
         height: size.height,
-        fileName: `${safeFileName(state.masterName)}-${safeFileName(size.name)}-${size.width}x${size.height}.png`
+        format: extension.toUpperCase(),
+        fileName: `${safeFileName(state.masterName)}-${safeFileName(size.name)}-${size.width}x${size.height}.${extension}`,
+        layoutNote: layout.note
       };
     }
 
-    function inferFocusFromDemo(size, demo) {
-      const fallback = { x: size.focusX / 100, y: size.focusY / 100 };
+    function inferLayoutFromDemo(size, demo) {
+      const targetAspect = size.width / size.height;
+      const selectedMode = size.mode === 'auto' ? fitMode.value : size.mode;
+      const fallback = {
+        mode: selectedMode,
+        focus: { x: size.focusX / 100, y: size.focusY / 100 },
+        note: selectedMode === 'contain' ? '完整居中留白' : '按目标尺寸居中裁切铺满'
+      };
       if (!demo) return fallback;
 
-      const targetRatio = size.width / size.height;
-      const demoRatio = demo.naturalWidth / demo.naturalHeight;
-      const ratioDelta = Math.abs(targetRatio - demoRatio) / targetRatio;
+      const demoAspect = demo.naturalWidth / demo.naturalHeight;
+      const ratioDelta = Math.abs(targetAspect - demoAspect) / targetAspect;
+      const inferredFocus = {
+        x: demoAspect > targetAspect ? clamp(size.focusX / 100, 0.35, 0.65) : fallback.focus.x,
+        y: demoAspect < targetAspect ? clamp(size.focusY / 100, 0.35, 0.65) : fallback.focus.y
+      };
 
-      if (ratioDelta < 0.08) return fallback;
+      if (selectedMode === 'contain') {
+        return {
+          ...fallback,
+          focus: inferredFocus,
+          note: `参考 demo ${demo.naturalWidth}×${demo.naturalHeight}，完整居中留白`
+        };
+      }
+
+      if (ratioDelta < 0.08) {
+        return {
+          mode: selectedMode,
+          focus: fallback.focus,
+          note: `参考 demo ${demo.naturalWidth}×${demo.naturalHeight}，比例接近目标，按目标比例铺满`
+        };
+      }
 
       return {
-        x: demoRatio > targetRatio ? clamp(size.focusX / 100, 0.35, 0.65) : fallback.x,
-        y: demoRatio < targetRatio ? clamp(size.focusY / 100, 0.35, 0.65) : fallback.y
+        mode: selectedMode,
+        focus: inferredFocus,
+        note: `参考 demo ${demo.naturalWidth}×${demo.naturalHeight}，推断取景焦点后按目标比例铺满`
       };
     }
 
     function getCoverRect(image, targetWidth, targetHeight, focusX, focusY) {
       const sourceRatio = image.naturalWidth / image.naturalHeight;
-      const targetRatio = targetWidth / targetHeight;
+      const cropRatio = targetWidth / targetHeight;
       let sx = 0;
       let sy = 0;
       let sw = image.naturalWidth;
       let sh = image.naturalHeight;
 
-      if (sourceRatio > targetRatio) {
-        sw = image.naturalHeight * targetRatio;
+      if (sourceRatio > cropRatio) {
+        sw = image.naturalHeight * cropRatio;
         sx = (image.naturalWidth - sw) * focusX;
       } else {
-        sh = image.naturalWidth / targetRatio;
+        sh = image.naturalWidth / cropRatio;
         sy = (image.naturalHeight - sh) * focusY;
       }
 
@@ -804,7 +840,8 @@
           <div class="result-preview"><img src="${result.url}" alt="${escapeHtml(result.name)} 生成结果"></div>
           <div class="result-meta">
             <strong>${escapeHtml(result.name)}</strong>
-            <span class="hint">${result.width} × ${result.height}px · PNG</span>
+            <span class="hint">${result.width} × ${result.height}px · ${result.format}</span>
+            <span class="hint">${escapeHtml(result.layoutNote)}</span>
             <a class="button" download="${escapeHtml(result.fileName)}" href="${result.url}">下载这张</a>
           </div>
         `;
