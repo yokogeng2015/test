@@ -1,9 +1,862 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-  <title>My First GitHub Page</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>入口图自动生成工具</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #182033;
+      --muted: #667085;
+      --brand: #4f46e5;
+      --brand-dark: #3730a3;
+      --border: #d8deea;
+      --soft: #eef2ff;
+      --danger: #d92d20;
+      --success: #15803d;
+      --shadow: 0 18px 45px rgba(22, 28, 45, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, #e0e7ff 0, transparent 32rem), var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.5;
+    }
+
+    header {
+      padding: 40px 24px 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0 0 12px;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing: -0.04em;
+    }
+
+    header p {
+      max-width: 820px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    main {
+      width: min(1280px, calc(100% - 32px));
+      margin: 0 auto 48px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(216, 222, 234, 0.9);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .panel h2 {
+      margin: 0 0 14px;
+      font-size: 22px;
+    }
+
+    .panel h3 {
+      margin: 0 0 12px;
+      font-size: 17px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    label,
+    .label {
+      color: #344054;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 9px 12px;
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px dashed #a7b4cc;
+      border-radius: 14px;
+      background: #f8fafc;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--brand);
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .preview-box {
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      min-height: 280px;
+      border: 1px dashed #b7c3d7;
+      border-radius: 20px;
+      background:
+        linear-gradient(45deg, #f4f6fa 25%, transparent 25%),
+        linear-gradient(-45deg, #f4f6fa 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #f4f6fa 75%),
+        linear-gradient(-45deg, transparent 75%, #f4f6fa 75%);
+      background-size: 22px 22px;
+      background-position: 0 0, 0 11px, 11px -11px, -11px 0;
+    }
+
+    .preview-box img {
+      display: block;
+      max-width: 100%;
+      max-height: 420px;
+      object-fit: contain;
+      border-radius: 16px;
+      box-shadow: 0 16px 36px rgba(16, 24, 40, 0.16);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button,
+    .button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 18px;
+      background: var(--brand);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+      box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
+    }
+
+    button:hover,
+    .button:hover {
+      background: var(--brand-dark);
+      transform: translateY(-1px);
+    }
+
+    button.secondary,
+    .button.secondary {
+      background: #fff;
+      color: var(--brand);
+      border: 1px solid #c7d2fe;
+      box-shadow: none;
+    }
+
+    button.ghost {
+      background: #fff;
+      color: #344054;
+      border: 1px solid var(--border);
+      box-shadow: none;
+    }
+
+    button.danger {
+      background: #fff;
+      color: var(--danger);
+      border: 1px solid #fecaca;
+      box-shadow: none;
+    }
+
+    .size-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .size-card {
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: #fff;
+      padding: 16px;
+    }
+
+    .size-head {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .size-title {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      min-width: 0;
+      font-weight: 900;
+    }
+
+    .size-fields {
+      display: grid;
+      grid-template-columns: 1.35fr 0.75fr 0.75fr 1fr;
+      gap: 10px;
+    }
+
+    .advanced {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #eef2f7;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .result-card {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: #fff;
+    }
+
+    .result-preview {
+      display: grid;
+      place-items: center;
+      min-height: 190px;
+      padding: 12px;
+      background: #f8fafc;
+    }
+
+    .result-preview img {
+      max-width: 100%;
+      max-height: 280px;
+      border-radius: 10px;
+      box-shadow: 0 10px 26px rgba(16, 24, 40, 0.14);
+    }
+
+    .result-meta {
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .status {
+      display: none;
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: var(--soft);
+      color: #312e81;
+      font-weight: 700;
+    }
+
+    .status.show {
+      display: block;
+    }
+
+    .status.error {
+      background: #fef2f2;
+      color: var(--danger);
+    }
+
+    .status.success {
+      background: #f0fdf4;
+      color: var(--success);
+    }
+
+    .empty {
+      padding: 28px;
+      border: 1px dashed #b7c3d7;
+      border-radius: 18px;
+      color: var(--muted);
+      text-align: center;
+      background: #f8fafc;
+    }
+
+    .mini-preview {
+      display: none;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mini-preview.show {
+      display: block;
+    }
+
+    .rules {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .rule-card {
+      border-radius: 18px;
+      background: #f8fafc;
+      border: 1px solid #e4e9f2;
+      padding: 16px;
+    }
+
+    .rule-card strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 900px) {
+      .grid,
+      .rules {
+        grid-template-columns: 1fr;
+      }
+
+      .size-fields,
+      .advanced {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      main {
+        width: min(100% - 20px, 1280px);
+      }
+
+      .panel {
+        padding: 18px;
+      }
+
+      .size-fields,
+      .advanced {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
-  <h1>Hello Sony QA 🚀</h1>
+  <header>
+    <h1>入口图自动生成工具</h1>
+    <p>上传一张包含文字、icon 等元素的主画面，为每个入口图尺寸配置 demo 或生成参数，勾选后即可批量生成对应尺寸的 PNG 图片。</p>
+  </header>
+
+  <main>
+    <section class="panel grid" aria-label="主画面上传和预览">
+      <div>
+        <h2>1. 上传主画面</h2>
+        <div class="field">
+          <label for="masterInput">主画面图片</label>
+          <input id="masterInput" type="file" accept="image/*">
+          <div class="hint">主画面可以包含文字、icon、人物或背景。工具会按目标尺寸裁切/留白，尽量保留主体内容。</div>
+        </div>
+        <div class="field">
+          <label for="fitMode">默认生成方式</label>
+          <select id="fitMode">
+            <option value="cover">铺满裁切：适合视觉入口图</option>
+            <option value="contain">完整留白：适合必须保留全部文字</option>
+          </select>
+          <div class="hint">每个尺寸可通过 demo/参数微调；如果 demo 比例与目标一致，工具会以 demo 作为构图参考。</div>
+        </div>
+      </div>
+      <div class="preview-box" id="masterPreview">
+        <span class="hint">主画面预览会显示在这里</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>2. 配置入口图尺寸</h2>
+      <p class="hint">可以新增任意尺寸。demo 图用于提供该尺寸的构图参考：若上传 demo，会按 demo 比例先推断裁切；也可以手动填写主体安全区参数。</p>
+      <div class="toolbar" style="margin: 16px 0 18px;">
+        <button id="addSizeBtn" type="button">新增尺寸</button>
+        <button id="selectAllBtn" type="button" class="secondary">全选</button>
+        <button id="clearAllBtn" type="button" class="ghost">取消全选</button>
+        <button id="resetBtn" type="button" class="danger">恢复默认尺寸</button>
+      </div>
+      <div id="sizeList" class="size-list"></div>
+    </section>
+
+    <section class="panel">
+      <h2>3. 生成与下载</h2>
+      <div class="toolbar">
+        <button id="generateBtn" type="button">生成勾选尺寸</button>
+        <button id="downloadAllBtn" type="button" class="secondary" disabled>全部逐个下载</button>
+      </div>
+      <div id="status" class="status" role="status"></div>
+    </section>
+
+    <section class="panel">
+      <h2>生成结果</h2>
+      <div id="resultGrid" class="result-grid">
+        <div class="empty">还没有生成图片。上传主画面并点击“生成勾选尺寸”。</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>生成规则说明</h2>
+      <div class="rules">
+        <div class="rule-card">
+          <strong>尺寸可新增</strong>
+          <span class="hint">名称、宽度、高度、是否勾选都会保存到浏览器本地，下次打开自动恢复。</span>
+        </div>
+        <div class="rule-card">
+          <strong>demo 可选</strong>
+          <span class="hint">每个尺寸可上传一张 demo。工具会使用 demo 比例作为构图参考，帮助输出更接近该入口位。</span>
+        </div>
+        <div class="rule-card">
+          <strong>参数可微调</strong>
+          <span class="hint">安全区百分比用于控制主画面保留区域，适合有文字、icon 不想被裁切的场景。</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <template id="sizeTemplate">
+    <article class="size-card">
+      <div class="size-head">
+        <label class="size-title">
+          <input class="enabled" type="checkbox">
+          <span class="titleText">入口图尺寸</span>
+        </label>
+        <button class="danger remove" type="button">删除</button>
+      </div>
+      <div class="size-fields">
+        <div class="field">
+          <label>名称</label>
+          <input class="name" type="text" placeholder="例如 首页 Banner">
+        </div>
+        <div class="field">
+          <label>宽度(px)</label>
+          <input class="width" type="number" min="1" step="1">
+        </div>
+        <div class="field">
+          <label>高度(px)</label>
+          <input class="height" type="number" min="1" step="1">
+        </div>
+        <div class="field">
+          <label>demo 图</label>
+          <input class="demo" type="file" accept="image/*">
+          <div class="mini-preview">已选择 demo</div>
+        </div>
+      </div>
+      <div class="advanced">
+        <div class="field">
+          <label>安全区 X(%)</label>
+          <input class="focusX" type="number" min="0" max="100" step="1">
+        </div>
+        <div class="field">
+          <label>安全区 Y(%)</label>
+          <input class="focusY" type="number" min="0" max="100" step="1">
+        </div>
+        <div class="field">
+          <label>背景色</label>
+          <input class="background" type="text" placeholder="#ffffff 或 transparent">
+        </div>
+        <div class="field">
+          <label>该尺寸方式</label>
+          <select class="mode">
+            <option value="auto">跟随默认</option>
+            <option value="cover">铺满裁切</option>
+            <option value="contain">完整留白</option>
+          </select>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <script>
+    const STORAGE_KEY = 'entry-image-tool-size-configs-v1';
+    const DEFAULT_SIZES = [
+      { id: crypto.randomUUID(), name: '方形入口 300x300', width: 300, height: 300, enabled: true, focusX: 50, focusY: 50, background: '#ffffff', mode: 'auto' },
+      { id: crypto.randomUUID(), name: '横版 Banner 640x360', width: 640, height: 360, enabled: true, focusX: 50, focusY: 50, background: '#ffffff', mode: 'auto' },
+      { id: crypto.randomUUID(), name: '运营入口 750x420', width: 750, height: 420, enabled: true, focusX: 50, focusY: 50, background: '#ffffff', mode: 'auto' },
+      { id: crypto.randomUUID(), name: '竖版海报 1080x1920', width: 1080, height: 1920, enabled: false, focusX: 50, focusY: 50, background: '#ffffff', mode: 'auto' }
+    ];
+
+    const state = {
+      masterImage: null,
+      masterName: 'entry-image',
+      sizes: loadSizes(),
+      demoImages: new Map(),
+      results: []
+    };
+
+    const masterInput = document.querySelector('#masterInput');
+    const masterPreview = document.querySelector('#masterPreview');
+    const fitMode = document.querySelector('#fitMode');
+    const sizeList = document.querySelector('#sizeList');
+    const template = document.querySelector('#sizeTemplate');
+    const resultGrid = document.querySelector('#resultGrid');
+    const statusBox = document.querySelector('#status');
+    const downloadAllBtn = document.querySelector('#downloadAllBtn');
+
+    masterInput.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        state.masterImage = await loadImage(file);
+        state.masterName = file.name.replace(/\.[^.]+$/, '') || 'entry-image';
+        masterPreview.innerHTML = '';
+        const image = document.createElement('img');
+        image.src = URL.createObjectURL(file);
+        image.alt = '主画面预览';
+        masterPreview.appendChild(image);
+        showStatus(`已读取主画面：${state.masterImage.naturalWidth} × ${state.masterImage.naturalHeight}`, 'success');
+      } catch (error) {
+        showStatus(`主画面读取失败：${error.message}`, 'error');
+      }
+    });
+
+    document.querySelector('#addSizeBtn').addEventListener('click', () => {
+      state.sizes.push({
+        id: crypto.randomUUID(),
+        name: '新入口图尺寸',
+        width: 800,
+        height: 450,
+        enabled: true,
+        focusX: 50,
+        focusY: 50,
+        background: '#ffffff',
+        mode: 'auto'
+      });
+      saveSizes();
+      renderSizes();
+    });
+
+    document.querySelector('#selectAllBtn').addEventListener('click', () => {
+      state.sizes.forEach((size) => size.enabled = true);
+      saveSizes();
+      renderSizes();
+    });
+
+    document.querySelector('#clearAllBtn').addEventListener('click', () => {
+      state.sizes.forEach((size) => size.enabled = false);
+      saveSizes();
+      renderSizes();
+    });
+
+    document.querySelector('#resetBtn').addEventListener('click', () => {
+      if (!confirm('确定恢复默认尺寸？这会清空当前自定义尺寸配置。')) return;
+      state.sizes = DEFAULT_SIZES.map((size) => ({ ...size, id: crypto.randomUUID() }));
+      state.demoImages.clear();
+      saveSizes();
+      renderSizes();
+      showStatus('已恢复默认尺寸。', 'success');
+    });
+
+    document.querySelector('#generateBtn').addEventListener('click', generateImages);
+    downloadAllBtn.addEventListener('click', () => {
+      state.results.forEach((result, index) => {
+        setTimeout(() => downloadDataUrl(result.url, result.fileName), index * 180);
+      });
+    });
+
+    renderSizes();
+
+    function loadSizes() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return DEFAULT_SIZES.map((size) => ({ ...size, id: crypto.randomUUID() }));
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('empty config');
+        return parsed.map(normalizeSize);
+      } catch {
+        return DEFAULT_SIZES.map((size) => ({ ...size, id: crypto.randomUUID() }));
+      }
+    }
+
+    function normalizeSize(size) {
+      return {
+        id: size.id || crypto.randomUUID(),
+        name: String(size.name || '入口图尺寸'),
+        width: Number(size.width) || 300,
+        height: Number(size.height) || 300,
+        enabled: Boolean(size.enabled),
+        focusX: clamp(Number(size.focusX) || 50, 0, 100),
+        focusY: clamp(Number(size.focusY) || 50, 0, 100),
+        background: String(size.background || '#ffffff'),
+        mode: ['auto', 'cover', 'contain'].includes(size.mode) ? size.mode : 'auto'
+      };
+    }
+
+    function saveSizes() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.sizes));
+    }
+
+    function renderSizes() {
+      sizeList.innerHTML = '';
+      state.sizes.forEach((size) => {
+        const item = template.content.firstElementChild.cloneNode(true);
+        const enabled = item.querySelector('.enabled');
+        const titleText = item.querySelector('.titleText');
+        const name = item.querySelector('.name');
+        const width = item.querySelector('.width');
+        const height = item.querySelector('.height');
+        const demo = item.querySelector('.demo');
+        const miniPreview = item.querySelector('.mini-preview');
+        const focusX = item.querySelector('.focusX');
+        const focusY = item.querySelector('.focusY');
+        const background = item.querySelector('.background');
+        const mode = item.querySelector('.mode');
+
+        titleText.textContent = `${size.name} · ${size.width}×${size.height}`;
+        enabled.checked = size.enabled;
+        name.value = size.name;
+        width.value = size.width;
+        height.value = size.height;
+        focusX.value = size.focusX;
+        focusY.value = size.focusY;
+        background.value = size.background;
+        mode.value = size.mode;
+        miniPreview.classList.toggle('show', state.demoImages.has(size.id));
+
+        enabled.addEventListener('change', () => updateSize(size.id, { enabled: enabled.checked }));
+        name.addEventListener('input', () => updateSize(size.id, { name: name.value }, false));
+        width.addEventListener('input', () => updateSize(size.id, { width: Number(width.value) }, false));
+        height.addEventListener('input', () => updateSize(size.id, { height: Number(height.value) }, false));
+        focusX.addEventListener('input', () => updateSize(size.id, { focusX: clamp(Number(focusX.value), 0, 100) }, false));
+        focusY.addEventListener('input', () => updateSize(size.id, { focusY: clamp(Number(focusY.value), 0, 100) }, false));
+        background.addEventListener('input', () => updateSize(size.id, { background: background.value }, false));
+        mode.addEventListener('change', () => updateSize(size.id, { mode: mode.value }));
+        demo.addEventListener('change', async (event) => {
+          const file = event.target.files[0];
+          if (!file) return;
+          try {
+            const image = await loadImage(file);
+            state.demoImages.set(size.id, image);
+            miniPreview.textContent = `已选择 demo：${image.naturalWidth} × ${image.naturalHeight}`;
+            miniPreview.classList.add('show');
+            showStatus(`${size.name} 的 demo 已读取。`, 'success');
+          } catch (error) {
+            showStatus(`demo 读取失败：${error.message}`, 'error');
+          }
+        });
+        item.querySelector('.remove').addEventListener('click', () => {
+          state.sizes = state.sizes.filter((entry) => entry.id !== size.id);
+          state.demoImages.delete(size.id);
+          saveSizes();
+          renderSizes();
+        });
+        sizeList.appendChild(item);
+      });
+    }
+
+    function updateSize(id, patch, rerender = true) {
+      const size = state.sizes.find((entry) => entry.id === id);
+      if (!size) return;
+      Object.assign(size, patch);
+      size.width = Math.max(1, Number(size.width) || 1);
+      size.height = Math.max(1, Number(size.height) || 1);
+      size.focusX = clamp(Number(size.focusX) || 50, 0, 100);
+      size.focusY = clamp(Number(size.focusY) || 50, 0, 100);
+      saveSizes();
+      if (rerender) renderSizes();
+    }
+
+    async function generateImages() {
+      if (!state.masterImage) {
+        showStatus('请先上传主画面。', 'error');
+        return;
+      }
+
+      const targets = state.sizes.filter((size) => size.enabled);
+      if (targets.length === 0) {
+        showStatus('请至少勾选一个入口图尺寸。', 'error');
+        return;
+      }
+
+      try {
+        state.results = targets.map((size) => renderImageForSize(size));
+        renderResults();
+        downloadAllBtn.disabled = state.results.length === 0;
+        showStatus(`已生成 ${state.results.length} 张入口图。`, 'success');
+      } catch (error) {
+        showStatus(`生成失败：${error.message}`, 'error');
+      }
+    }
+
+    function renderImageForSize(size) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size.width;
+      canvas.height = size.height;
+      const context = canvas.getContext('2d');
+      const background = size.background.trim() || '#ffffff';
+      if (background !== 'transparent') {
+        context.fillStyle = background;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      const demo = state.demoImages.get(size.id);
+      const mode = size.mode === 'auto' ? fitMode.value : size.mode;
+      const focus = inferFocusFromDemo(size, demo);
+      const draw = mode === 'contain'
+        ? getContainRect(state.masterImage, canvas.width, canvas.height)
+        : getCoverRect(state.masterImage, canvas.width, canvas.height, focus.x, focus.y);
+
+      context.drawImage(state.masterImage, draw.sx, draw.sy, draw.sw, draw.sh, draw.dx, draw.dy, draw.dw, draw.dh);
+
+      const url = canvas.toDataURL('image/png');
+      return {
+        url,
+        name: size.name,
+        width: size.width,
+        height: size.height,
+        fileName: `${safeFileName(state.masterName)}-${safeFileName(size.name)}-${size.width}x${size.height}.png`
+      };
+    }
+
+    function inferFocusFromDemo(size, demo) {
+      const fallback = { x: size.focusX / 100, y: size.focusY / 100 };
+      if (!demo) return fallback;
+
+      const targetRatio = size.width / size.height;
+      const demoRatio = demo.naturalWidth / demo.naturalHeight;
+      const ratioDelta = Math.abs(targetRatio - demoRatio) / targetRatio;
+
+      if (ratioDelta < 0.08) return fallback;
+
+      return {
+        x: demoRatio > targetRatio ? clamp(size.focusX / 100, 0.35, 0.65) : fallback.x,
+        y: demoRatio < targetRatio ? clamp(size.focusY / 100, 0.35, 0.65) : fallback.y
+      };
+    }
+
+    function getCoverRect(image, targetWidth, targetHeight, focusX, focusY) {
+      const sourceRatio = image.naturalWidth / image.naturalHeight;
+      const targetRatio = targetWidth / targetHeight;
+      let sx = 0;
+      let sy = 0;
+      let sw = image.naturalWidth;
+      let sh = image.naturalHeight;
+
+      if (sourceRatio > targetRatio) {
+        sw = image.naturalHeight * targetRatio;
+        sx = (image.naturalWidth - sw) * focusX;
+      } else {
+        sh = image.naturalWidth / targetRatio;
+        sy = (image.naturalHeight - sh) * focusY;
+      }
+
+      return { sx, sy, sw, sh, dx: 0, dy: 0, dw: targetWidth, dh: targetHeight };
+    }
+
+    function getContainRect(image, targetWidth, targetHeight) {
+      const scale = Math.min(targetWidth / image.naturalWidth, targetHeight / image.naturalHeight);
+      const dw = image.naturalWidth * scale;
+      const dh = image.naturalHeight * scale;
+      return {
+        sx: 0,
+        sy: 0,
+        sw: image.naturalWidth,
+        sh: image.naturalHeight,
+        dx: (targetWidth - dw) / 2,
+        dy: (targetHeight - dh) / 2,
+        dw,
+        dh
+      };
+    }
+
+    function renderResults() {
+      resultGrid.innerHTML = '';
+      if (state.results.length === 0) {
+        resultGrid.innerHTML = '<div class="empty">还没有生成图片。</div>';
+        return;
+      }
+      state.results.forEach((result) => {
+        const card = document.createElement('article');
+        card.className = 'result-card';
+        card.innerHTML = `
+          <div class="result-preview"><img src="${result.url}" alt="${escapeHtml(result.name)} 生成结果"></div>
+          <div class="result-meta">
+            <strong>${escapeHtml(result.name)}</strong>
+            <span class="hint">${result.width} × ${result.height}px · PNG</span>
+            <a class="button" download="${escapeHtml(result.fileName)}" href="${result.url}">下载这张</a>
+          </div>
+        `;
+        resultGrid.appendChild(card);
+      });
+    }
+
+    function loadImage(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error('图片文件无法加载'));
+        image.src = url;
+      });
+    }
+
+    function showStatus(message, type = '') {
+      statusBox.textContent = message;
+      statusBox.className = `status show ${type}`.trim();
+    }
+
+    function downloadDataUrl(url, fileName) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function safeFileName(value) {
+      return String(value || 'entry-image')
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/[\\/:*?"<>|]/g, '')
+        .slice(0, 80) || 'entry-image';
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>'"]/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+      }[char]));
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+  </script>
 </body>
 </html>
