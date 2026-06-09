@@ -96,6 +96,7 @@
   <header>
     <h1>入口图智能重排生成工具</h1>
     <p>不是简单裁切：上传一张已设计好的主画面，工具会先尝试从主图中提取文字、logo、角标等视觉块，再按照每个尺寸 demo 提示的位置和大小重新排版生成新图。</p>
+    <p>不是简单裁切：上传主画面作为背景素材，再提供标题、卖点、logo 等图层；每个尺寸的 demo 会被分析成文字/logo 的布局提示，自动生成新的入口图。</p>
   </header>
 
   <main>
@@ -106,6 +107,7 @@
           <label for="masterInput">主画面图片</label>
           <input id="masterInput" type="file" accept="image/*">
           <div class="hint">主画面可以包含文字、icon、logo 等元素；工具会分析这些内容块，并按 demo 的版式重新摆放。</div>
+          <div class="hint">主画面用于生成背景，不再只是按尺寸硬裁切；文字和 logo 会作为独立图层重新排版。</div>
         </div>
         <div class="field">
           <label for="fitMode">背景处理方式</label>
@@ -117,6 +119,7 @@
         </div>
       </div>
       <div><div class="preview-box" id="masterPreview"><span class="hint">主画面预览会显示在这里</span></div><div id="masterAnalysis" class="layout-note">主画面分析结果会显示在这里。</div></div>
+      <div class="preview-box" id="masterPreview"><span class="hint">主画面预览会显示在这里</span></div>
     </section>
 
     <section class="panel">
@@ -126,6 +129,7 @@
         <div class="field"><label for="sourceMode">内容来源</label><select id="sourceMode"><option value="extract">从主图自动提取图层（推荐）</option><option value="manual">使用下面手动文案 / logo 图层</option></select></div>
         <div class="field"><label>提取说明</label><div class="layout-note">自动提取会保留主图里原本的文字/icon外观，再根据 demo 的位置、大小进行缩放和重排；不会 OCR 修改文字内容。</div></div>
       </div>
+      <p class="hint">浏览器不能可靠 OCR 任意图片里的文字，因此这里把文字、logo、角标作为可编辑图层；生成时会根据各尺寸 demo 识别到的位置、大小和比例重新绘制。</p>
       <div class="fields-3">
         <div class="field"><label for="titleText">主标题</label><textarea id="titleText" placeholder="例如：夏日新品限时购">夏日新品限时购</textarea></div>
         <div class="field"><label for="subtitleText">副标题 / 卖点</label><textarea id="subtitleText" placeholder="例如：爆款直降 30%">爆款直降 30%</textarea></div>
@@ -160,6 +164,7 @@
     <section class="panel">
       <h2>4. 生成与下载</h2>
       <div class="toolbar"><button id="generateBtn" type="button">按主图内容 + demo 布局生成</button><button id="downloadAllBtn" type="button" class="secondary" disabled>全部逐个下载</button></div>
+      <div class="toolbar"><button id="generateBtn" type="button">按 demo 重排生成</button><button id="downloadAllBtn" type="button" class="secondary" disabled>全部逐个下载</button></div>
       <div id="status" class="status" role="status"></div>
     </section>
 
@@ -169,6 +174,7 @@
       <h2>生成规则说明</h2>
       <div class="rules">
         <div class="rule-card"><strong>重新生成，不只是裁切</strong><span class="hint">主图里的文字、logo、icon 会被识别为可搬运视觉块；必要时也可切换手动文案模式。</span></div>
+        <div class="rule-card"><strong>重新生成，不只是裁切</strong><span class="hint">主画面只负责背景；标题、副标题、logo、角标按目标尺寸重新绘制。</span></div>
         <div class="rule-card"><strong>demo 提供布局提示</strong><span class="hint">工具会分析 demo 的高对比区域，推断文字和 logo 大概排在哪里、应该占多大。</span></div>
         <div class="rule-card"><strong>尺寸可以持续新增</strong><span class="hint">每个尺寸的宽高、策略和微调参数都会保存到浏览器本地。</span></div>
       </div>
@@ -209,6 +215,19 @@
     const controls = {
       masterInput: $('#masterInput'), logoInput: $('#logoInput'), masterPreview: $('#masterPreview'), masterAnalysis: $('#masterAnalysis'), fitMode: $('#fitMode'), sizeList: $('#sizeList'), template: $('#sizeTemplate'), resultGrid: $('#resultGrid'), statusBox: $('#status'), downloadAllBtn: $('#downloadAllBtn'),
       sourceMode: $('#sourceMode'), titleText: $('#titleText'), subtitleText: $('#subtitleText'), badgeText: $('#badgeText'), brandText: $('#brandText'), textColor: $('#textColor'), accentColor: $('#accentColor'), fontFamily: $('#fontFamily'), shadowStrength: $('#shadowStrength'), scrimStrength: $('#scrimStrength'), layoutMode: $('#layoutMode')
+    const STORAGE_KEY = 'entry-image-tool-size-configs-v2';
+    const DEFAULT_SIZES = [
+      { id: crypto.randomUUID(), name: '方形入口 300x300', width: 300, height: 300, enabled: true, focusX: 50, focusY: 50, padding: 8, background: '#101828', mode: 'auto' },
+      { id: crypto.randomUUID(), name: '横版 Banner 640x360', width: 640, height: 360, enabled: true, focusX: 50, focusY: 50, padding: 7, background: '#101828', mode: 'auto' },
+      { id: crypto.randomUUID(), name: '运营入口 750x420', width: 750, height: 420, enabled: true, focusX: 50, focusY: 50, padding: 7, background: '#101828', mode: 'auto' },
+      { id: crypto.randomUUID(), name: '竖版海报 1080x1920', width: 1080, height: 1920, enabled: false, focusX: 50, focusY: 50, padding: 9, background: '#101828', mode: 'auto' }
+    ];
+
+    const state = { masterImage: null, logoImage: null, masterName: 'entry-image', sizes: loadSizes(), demoImages: new Map(), demoLayouts: new Map(), results: [] };
+    const $ = (selector) => document.querySelector(selector);
+    const controls = {
+      masterInput: $('#masterInput'), logoInput: $('#logoInput'), masterPreview: $('#masterPreview'), fitMode: $('#fitMode'), sizeList: $('#sizeList'), template: $('#sizeTemplate'), resultGrid: $('#resultGrid'), statusBox: $('#status'), downloadAllBtn: $('#downloadAllBtn'),
+      titleText: $('#titleText'), subtitleText: $('#subtitleText'), badgeText: $('#badgeText'), brandText: $('#brandText'), textColor: $('#textColor'), accentColor: $('#accentColor'), fontFamily: $('#fontFamily'), shadowStrength: $('#shadowStrength'), scrimStrength: $('#scrimStrength'), layoutMode: $('#layoutMode')
     };
 
     controls.masterInput.addEventListener('change', async (event) => {
@@ -225,6 +244,7 @@
         controls.masterPreview.appendChild(image);
         controls.masterAnalysis.innerHTML = state.masterLayout.summary;
         showStatus(`已读取并分析主画面：${state.masterImage.naturalWidth} × ${state.masterImage.naturalHeight}，识别到 ${state.masterLayout.detectedCount} 个内容块。`, 'success');
+        showStatus(`已读取主画面：${state.masterImage.naturalWidth} × ${state.masterImage.naturalHeight}`, 'success');
       } catch (error) { showStatus(`主画面读取失败：${error.message}`, 'error'); }
     });
 
@@ -239,6 +259,10 @@
     $('#selectAllBtn').addEventListener('click', () => { state.sizes.forEach((size) => size.enabled = true); saveSizes(); renderSizes(); });
     $('#clearAllBtn').addEventListener('click', () => { state.sizes.forEach((size) => size.enabled = false); saveSizes(); renderSizes(); });
     $('#resetBtn').addEventListener('click', () => { if (!confirm('确定恢复默认尺寸？这会清空当前自定义尺寸配置。')) return; state.sizes = DEFAULT_SIZES.map((size) => ({ ...size, id: makeId() })); state.demoImages.clear(); state.demoLayouts.clear(); saveSizes(); renderSizes(); showStatus('已恢复默认尺寸。', 'success'); });
+    $('#addSizeBtn').addEventListener('click', () => { state.sizes.push({ id: crypto.randomUUID(), name: '新入口图尺寸', width: 800, height: 450, enabled: true, focusX: 50, focusY: 50, padding: 8, background: '#101828', mode: 'auto' }); saveSizes(); renderSizes(); });
+    $('#selectAllBtn').addEventListener('click', () => { state.sizes.forEach((size) => size.enabled = true); saveSizes(); renderSizes(); });
+    $('#clearAllBtn').addEventListener('click', () => { state.sizes.forEach((size) => size.enabled = false); saveSizes(); renderSizes(); });
+    $('#resetBtn').addEventListener('click', () => { if (!confirm('确定恢复默认尺寸？这会清空当前自定义尺寸配置。')) return; state.sizes = DEFAULT_SIZES.map((size) => ({ ...size, id: crypto.randomUUID() })); state.demoImages.clear(); state.demoLayouts.clear(); saveSizes(); renderSizes(); showStatus('已恢复默认尺寸。', 'success'); });
     $('#generateBtn').addEventListener('click', generateImages);
     controls.downloadAllBtn.addEventListener('click', () => state.results.forEach((result, index) => setTimeout(() => downloadDataUrl(result.url, result.fileName), index * 180)));
 
@@ -256,6 +280,16 @@
 
     function normalizeSize(size) {
       return { id: size.id || makeId(), name: String(size.name || '入口图尺寸'), width: Number(size.width) || 300, height: Number(size.height) || 300, enabled: Boolean(size.enabled), focusX: clamp(Number(size.focusX) || 50, 0, 100), focusY: clamp(Number(size.focusY) || 50, 0, 100), padding: clamp(Number(size.padding) || 8, 0, 30), background: String(size.background || '#101828'), mode: ['auto', 'cover', 'contain', 'blur'].includes(size.mode) ? size.mode : 'auto' };
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return DEFAULT_SIZES.map((size) => ({ ...size, id: crypto.randomUUID() }));
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('empty config');
+        return parsed.map(normalizeSize);
+      } catch { return DEFAULT_SIZES.map((size) => ({ ...size, id: crypto.randomUUID() })); }
+    }
+
+    function normalizeSize(size) {
+      return { id: size.id || crypto.randomUUID(), name: String(size.name || '入口图尺寸'), width: Number(size.width) || 300, height: Number(size.height) || 300, enabled: Boolean(size.enabled), focusX: clamp(Number(size.focusX) || 50, 0, 100), focusY: clamp(Number(size.focusY) || 50, 0, 100), padding: clamp(Number(size.padding) || 8, 0, 30), background: String(size.background || '#101828'), mode: ['auto', 'cover', 'contain', 'blur'].includes(size.mode) ? size.mode : 'auto' };
     }
 
     function saveSizes() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.sizes)); }
@@ -286,6 +320,7 @@
             const image = await loadImage(file);
             state.demoImages.set(size.id, image);
             const analyzed = analyzeVisualLayout(image, size, 'demo');
+            const analyzed = analyzeDemoLayout(image, size);
             state.demoLayouts.set(size.id, analyzed);
             refs.demoNote.textContent = `已选择 demo：${image.naturalWidth} × ${image.naturalHeight}`;
             refs.analysisNote.innerHTML = analyzed.summary;
@@ -315,6 +350,11 @@
         renderResults(); controls.downloadAllBtn.disabled = state.results.length === 0;
         showStatus(`已按“${controls.sourceMode.value === 'extract' ? '主图提取图层' : '手动文案图层'} + demo 布局”生成 ${state.results.length} 张入口图。`, 'success');
       } catch (error) { showStatus(`生成失败：${error.message}`, 'error'); }
+      if (!state.masterImage) { showStatus('请先上传主画面背景。', 'error'); return; }
+      const targets = state.sizes.filter((size) => size.enabled);
+      if (targets.length === 0) { showStatus('请至少勾选一个入口图尺寸。', 'error'); return; }
+      try { state.results = targets.map((size) => renderImageForSize(size)); renderResults(); controls.downloadAllBtn.disabled = state.results.length === 0; showStatus(`已按图层重排生成 ${state.results.length} 张入口图。`, 'success'); }
+      catch (error) { showStatus(`生成失败：${error.message}`, 'error'); }
     }
 
     function renderImageForSize(size) {
@@ -334,6 +374,13 @@
         drawTextLayer(context, controls.subtitleText.value, layout.subtitle, size, .58, 700);
         drawBadge(context, controls.badgeText.value, layout.badge, size);
       }
+      drawBackground(context, size, canvas.width, canvas.height);
+      const layout = controls.layoutMode.value === 'auto' ? (state.demoLayouts.get(size.id) || defaultLayout(size)) : defaultLayout(size);
+      drawTextScrim(context, layout.textGroup, Number(controls.scrimStrength.value) / 100);
+      drawLogo(context, layout.logo, size);
+      drawTextLayer(context, controls.titleText.value, layout.title, size, 1, 900);
+      drawTextLayer(context, controls.subtitleText.value, layout.subtitle, size, .58, 700);
+      drawBadge(context, controls.badgeText.value, layout.badge, size);
       const url = canvas.toDataURL('image/png');
       return { url, name: size.name, width: size.width, height: size.height, fileName: `${safeFileName(state.masterName)}-${safeFileName(size.name)}-${size.width}x${size.height}.png` };
     }
@@ -424,6 +471,25 @@
       const layout = mapBoxesToRoles(merged, size);
       layout.detectedCount = merged.length;
       layout.summary = summarizeLayout(layout, merged.length, kind);
+    function analyzeDemoLayout(image, size) {
+      const sampleWidth = 160;
+      const sampleHeight = Math.max(60, Math.round(sampleWidth * image.naturalHeight / image.naturalWidth));
+      const canvas = document.createElement('canvas'); canvas.width = sampleWidth; canvas.height = sampleHeight;
+      const context = canvas.getContext('2d'); context.drawImage(image, 0, 0, sampleWidth, sampleHeight);
+      const data = context.getImageData(0, 0, sampleWidth, sampleHeight).data;
+      const bg = estimateCornerColor(data, sampleWidth, sampleHeight);
+      const mask = new Uint8Array(sampleWidth * sampleHeight);
+      for (let y = 0; y < sampleHeight; y += 1) for (let x = 0; x < sampleWidth; x += 1) {
+        const index = (y * sampleWidth + x) * 4;
+        const contrast = Math.abs(data[index] - bg.r) + Math.abs(data[index + 1] - bg.g) + Math.abs(data[index + 2] - bg.b);
+        const alpha = data[index + 3];
+        if (alpha > 30 && contrast > 92) mask[y * sampleWidth + x] = 1;
+      }
+      const boxes = connectedBoxes(mask, sampleWidth, sampleHeight).filter((box) => box.area > 18).map((box) => normalizeBox(box, sampleWidth, sampleHeight));
+      const merged = mergeNearbyBoxes(boxes).filter((box) => box.w * box.h > .0025).sort((a, b) => (b.w * b.h) - (a.w * a.h));
+      const layout = mapBoxesToRoles(merged, size);
+      layout.detectedCount = merged.length;
+      layout.summary = summarizeLayout(layout, merged.length);
       return layout;
     }
 
@@ -438,6 +504,14 @@
       const badgeCandidates = candidates.filter((box) => box !== title && box !== subtitle && box.ratio >= 1.2 && box.h < .16).sort((a, b) => Math.abs(a.centerY - (subtitle.y + subtitle.h + .08)) - Math.abs(b.centerY - (subtitle.y + subtitle.h + .08)));
       const badge = firstOrDefault(badgeCandidates, base.badge);
       return { logo: expandBox(logo, .18, size.padding), title: expandBox(title, .22, size.padding), subtitle: expandBox(subtitle, .18, size.padding), badge: expandBox(badge, .16, size.padding), textGroup: unionBoxes([title, subtitle, badge]) };
+      if (boxes.length === 0) return base;
+      const squareish = boxes.filter((box) => box.w / box.h > .55 && box.w / box.h < 1.8).sort((a, b) => (a.y + a.x) - (b.y + b.x));
+      const horizontals = boxes.filter((box) => box.w / box.h >= 1.8).sort((a, b) => a.y - b.y);
+      const logo = squareish[0] ? expandBox(squareish[0], .25, size.padding) : base.logo;
+      const title = horizontals[0] ? expandBox(horizontals[0], .32, size.padding) : base.title;
+      const subtitle = horizontals[1] ? expandBox(horizontals[1], .28, size.padding) : deriveSubtitle(title, base.subtitle);
+      const badge = horizontals[2] ? expandBox(horizontals[2], .22, size.padding) : base.badge;
+      return { logo, title, subtitle, badge, textGroup: unionBoxes([title, subtitle, badge]) };
     }
 
     function defaultLayout(size) {
@@ -450,6 +524,7 @@
       const badge = { x: left, y: subtitle.y + subtitle.h + .025, w: portrait ? .28 : .18, h: portrait ? .055 : .08 };
       const logo = { x: left, y: pad, w: portrait ? .16 : .1, h: portrait ? .08 : .13 };
       return { logo, title, subtitle, badge, textGroup: unionBoxes([title, subtitle, badge]), detectedCount: 0, summary: '' };
+      return { logo, title, subtitle, badge, textGroup: unionBoxes([title, subtitle, badge]) };
     }
 
     function drawLogo(context, box, size) {
@@ -473,6 +548,7 @@
 
     function drawTextScrim(context, box, alpha) {
       if (!alpha || !box) return;
+      if (!alpha) return;
       const rect = toPixels(expandBox(box, .22, 0), context.canvas.width, context.canvas.height);
       const gradient = context.createLinearGradient(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
       gradient.addColorStop(0, `rgba(0,0,0,${alpha})`); gradient.addColorStop(1, 'rgba(0,0,0,0)');
@@ -481,6 +557,7 @@
 
     function estimateCornerColor(data, width, height) {
       const points = [[2, 2], [width - 3, 2], [2, height - 3], [width - 3, height - 3], [Math.floor(width / 2), 2], [2, Math.floor(height / 2)]];
+      const points = [[2, 2], [width - 3, 2], [2, height - 3], [width - 3, height - 3]];
       const sum = points.reduce((acc, [x, y]) => { const index = (y * width + x) * 4; acc.r += data[index]; acc.g += data[index + 1]; acc.b += data[index + 2]; return acc; }, { r: 0, g: 0, b: 0 });
       return { r: sum.r / points.length, g: sum.g / points.length, b: sum.b / points.length };
     }
@@ -517,6 +594,10 @@
       const merged = [];
       boxes.forEach((box) => {
         const target = merged.find((entry) => overlapsOrNear(entry, box, gap));
+    function mergeNearbyBoxes(boxes) {
+      const merged = [];
+      boxes.forEach((box) => {
+        const target = merged.find((entry) => overlapsOrNear(entry, box, .04));
         if (target) Object.assign(target, unionBoxes([target, box])); else merged.push({ ...box });
       });
       return merged;
@@ -532,6 +613,12 @@
     function toPixels(box, width, height) { return { x: box.x * width, y: box.y * height, w: box.w * width, h: box.h * height }; }
     function firstOrDefault(list, fallback) { return list[0] || fallback; }
     function scoreContentBox(box) { return box.w * box.h * 2 + Math.min(box.w / Math.max(box.h, .001), 5) * .02 - box.y * .02; }
+    function expandBox(box, amount, padding) { const pad = padding / 100; const dx = box.w * amount, dy = box.h * amount; return { x: clamp(box.x - dx, pad, 1 - pad), y: clamp(box.y - dy, pad, 1 - pad), w: clamp(box.w + dx * 2, .04, 1 - pad - clamp(box.x - dx, pad, 1 - pad)), h: clamp(box.h + dy * 2, .035, 1 - pad - clamp(box.y - dy, pad, 1 - pad)) }; }
+    function unionBoxes(boxes) { const x1 = Math.min(...boxes.map((box) => box.x)), y1 = Math.min(...boxes.map((box) => box.y)), x2 = Math.max(...boxes.map((box) => box.x + box.w)), y2 = Math.max(...boxes.map((box) => box.y + box.h)); return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 }; }
+    function deriveSubtitle(title, fallback) { return { x: title.x, y: clamp(title.y + title.h + .02, 0, .9), w: title.w * .9, h: Math.max(.04, title.h * .45) || fallback.h }; }
+    function summarizeLayout(layout, count) { return `<span class="pill">识别到 ${count} 个内容块</span> logo ${percentBox(layout.logo)}；标题 ${percentBox(layout.title)}；副标题 ${percentBox(layout.subtitle)}；角标 ${percentBox(layout.badge)}。`; }
+    function percentBox(box) { return `${Math.round(box.x * 100)}%,${Math.round(box.y * 100)}% / ${Math.round(box.w * 100)}%×${Math.round(box.h * 100)}%`; }
+    function toPixels(box, width, height) { return { x: box.x * width, y: box.y * height, w: box.w * width, h: box.h * height }; }
 
     function getCoverRect(image, targetWidth, targetHeight, focusX, focusY) { const sourceRatio = image.naturalWidth / image.naturalHeight; const targetRatio = targetWidth / targetHeight; let sx = 0, sy = 0, sw = image.naturalWidth, sh = image.naturalHeight; if (sourceRatio > targetRatio) { sw = image.naturalHeight * targetRatio; sx = (image.naturalWidth - sw) * focusX; } else { sh = image.naturalWidth / targetRatio; sy = (image.naturalHeight - sh) * focusY; } return { sx, sy, sw, sh, dx: 0, dy: 0, dw: targetWidth, dh: targetHeight }; }
     function getContainRect(image, targetWidth, targetHeight) { const scale = Math.min(targetWidth / image.naturalWidth, targetHeight / image.naturalHeight); const dw = image.naturalWidth * scale, dh = image.naturalHeight * scale; return { sx: 0, sy: 0, sw: image.naturalWidth, sh: image.naturalHeight, dx: (targetWidth - dw) / 2, dy: (targetHeight - dh) / 2, dw, dh }; }
