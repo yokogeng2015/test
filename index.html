@@ -346,12 +346,20 @@
 
     // 标准化尺寸配置
     function normalizeSize(size) {
+      const width = Math.max(1, Number(size.width) || 300);
+      const height = Math.max(1, Number(size.height) || 300);
       return {
         id: size.id || makeId(),
         name: String(size.name || '入口图尺寸'),
-        width: Number(size.width) || 300,
-        height: Number(size.height) || 300,
+        width,
+        height,
         enabled: Boolean(size.enabled),
+        mainX: clamp(Number(size.mainX) || 0, 0, width),
+        mainY: clamp(Number(size.mainY) || 0, 0, height),
+        mainWidth: Math.max(1, Number(size.mainWidth) || width),
+        mainHeight: Math.max(1, Number(size.mainHeight) || height),
+        cornerRadius: Math.max(0, Number(size.cornerRadius) || 0),
+        padding: Math.max(0, Number(size.padding) || 0),
         focusX: clamp(Number(size.focusX) || 50, 0, 100),
         focusY: clamp(Number(size.focusY) || 50, 0, 100),
         padding: clamp(Number(size.padding) || 8, 0, 30),
@@ -469,6 +477,22 @@
 
     // 为单个尺寸渲染图片
     function renderImageForSize(size) {
+      const finalCanvas = renderCanvasForSize(size, false);
+      const previewCanvas = renderCanvasForSize(size, true);
+      const url = finalCanvas.toDataURL('image/png');
+      const previewUrl = previewCanvas.toDataURL('image/png');
+      return {
+        url,
+        previewUrl,
+        name: size.name,
+        width: size.width,
+        height: size.height,
+        demoRole: size.demoRole,
+        fileName: `${safeFileName(state.masterName)}-${safeFileName(size.name)}-${size.width}x${size.height}.png`
+      };
+    }
+
+    function renderCanvasForSize(size, includeReferenceOverlay) {
       const canvas = document.createElement('canvas');
       canvas.width = size.width;
       canvas.height = size.height;
@@ -955,10 +979,11 @@
         const card = document.createElement('article');
         card.className = 'result-card';
         card.innerHTML = `
-          <div class="result-preview"><img src="${result.url}" alt="${escapeHtml(result.name)} 生成结果"></div>
+          <div class="result-preview"><img src="${result.previewUrl}" alt="${escapeHtml(result.name)} 预览结果"></div>
           <div class="result-meta">
             <strong>${escapeHtml(result.name)}</strong>
-            <span class="hint">${result.width} × ${result.height}px · PNG</span>
+            <span class="hint">${result.width} × ${result.height}px · PNG · ${getDemoRoleLabel(result.demoRole)}</span>
+            <span class="hint">预览可能包含半透明 demo 参考层；下载文件为最终输出图。</span>
             <a class="button" download="${escapeHtml(result.fileName)}" href="${result.url}">下载这张</a>
           </div>`;
         controls.resultGrid.appendChild(card);
