@@ -23942,50 +23942,30 @@ async function loadPSD(file){
   try{
     const buf = await file.arrayBuffer();
 
-    // ag-psd needs canvas factory for browser
-    agPsd.initializeCanvas(
-      (w, h) => { const c = document.createElement('canvas'); c.width=w; c.height=h; return c; },
-      (c) => c.getContext('2d')
-    );
+    // ag-psd auto-detects browser environment and uses document.createElement('canvas')
+    // No need to call initializeCanvas in browser context
 
     // readPsd returns a structured Psd object
+    // useImageData:false => layer.canvas is populated (not layer.imageData)
     const psd = agPsd.readPsd(buf, {
       skipLayerImageData: false,
       skipCompositeImageData: false,
       skipThumbnail: true,
+      useImageData: false,
     });
 
     setSt('PSD解析完成，正在提取图层…');
 
     const psdW = psd.width, psdH = psd.height;
 
-    // Build composite canvas from psd.canvas (ag-psd renders it)
-    let compCanvas;
-    if(psd.canvas){
-      compCanvas = psd.canvas;
-    } else {
-      // fallback: merge all layer canvases manually
-      compCanvas = document.createElement('canvas');
-      compCanvas.width = psdW; compCanvas.height = psdH;
-      const cctx = compCanvas.getContext('2d');
-      cctx.fillStyle = '#fff';
-      cctx.fillRect(0,0,psdW,psdH);
-    }
-    S.src = {canvas: compCanvas, w: psdW, h: psdH};
-
-    // Extract layers - ag-psd gives psd.children array
+    // Extract layers first so we can use them for fallback composite
     S.layers = [];
-    function walkLayers(layers, depth){
+    function walkLayers(layers){
       if(!layers) return;
       for(const layer of layers){
-        // groups have children
-        if(layer.children){
-          walkLayers(layer.children, depth+1);
-          continue;
-        }
-        const lw = layer.right  - layer.left;
-        const lh = layer.bottom - layer.top;
-        // skip hidden or zero-size
+        if(layer.children){ walkLayers(layer.children); continue; }
+        const lw = (layer.right||0) - (layer.left||0);
+        const lh = (layer.bottom||0) - (layer.top||0);
         if(!layer.canvas && (lw<=0 || lh<=0)) continue;
         S.layers.push({
           id: uid(),
@@ -24000,10 +23980,27 @@ async function loadPSD(file){
         });
       }
     }
-    // ag-psd: top layer in children[] = topmost visually
-    // we want bottom→top draw order, so reverse after walk
-    walkLayers(psd.children, 0);
-    S.layers.reverse();
+    walkLayers(psd.children);
+    S.layers.reverse(); // bottom→top draw order
+
+    // Build composite canvas
+    let compCanvas;
+    if(psd.canvas){
+      compCanvas = psd.canvas;
+    } else {
+      // Fallback: draw all visible layers bottom→top
+      compCanvas = document.createElement('canvas');
+      compCanvas.width = psdW; compCanvas.height = psdH;
+      const cctx = compCanvas.getContext('2d');
+      cctx.fillStyle = '#ffffff';
+      cctx.fillRect(0, 0, psdW, psdH);
+      for(const l of S.layers){
+        if(l.canvas && !l.hidden){
+          cctx.drawImage(l.canvas, l.x, l.y);
+        }
+      }
+    }
+    S.src = {canvas: compCanvas, w: psdW, h: psdH};
 
     if(S.layers.length === 0){
       showAlert('未提取到图层，但合成图已加载，可用单图模式继续', 'alertMain');
