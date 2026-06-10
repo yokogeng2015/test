@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>入口图生成工具</title>
+<script src="https://cdn.jsdelivr.net/npm/psd@3.4.0/dist/psd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #1a1b1e;
+  --bg2: #25262b;
+  --bg3: #2c2d33;
+  --bg4: #34353c;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #e8e9ec;
+  --text2: #9a9ba5;
+  --text3: #6b6c75;
+  --accent: #7c6fef;
+  --accent2: #9d93f5;
+  --accent-bg: rgba(124,111,239,0.15);
+  --success: #3ecf8e;
+  --warn: #f0a030;
+  --danger: #e24b4b;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* Layout */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+.sidebar {
+  width: 300px;
+  min-width: 300px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.topbar {
+  height: 52px;
+  min-height: 52px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 12px;
+}
+
+.workspace { flex: 1; overflow: auto; padding: 24px; }
+
+/* Sidebar sections */
+.sidebar-header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-header h1 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+
+.sidebar-header p {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.sidebar-body { flex: 1; overflow-y: auto; padding: 12px; }
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Section */
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 8px 4px 4px;
+}
+
+/* Upload zone */
+.upload-zone {
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--bg3);
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+.upload-zone input { display: none; }
+.upload-zone .icon { font-size: 24px; margin-bottom: 6px; opacity: 0.5; }
+.upload-zone p { font-size: 12px; color: var(--text2); }
+.upload-zone strong { color: var(--accent2); }
+
+/* Layer list */
+.layer-list { margin-top: 8px; }
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  border: 1px solid transparent;
+  margin-bottom: 2px;
+  transition: all 0.1s;
+}
+.layer-item:hover { background: var(--bg4); }
+.layer-item.selected { background: var(--accent-bg); border-color: var(--accent); }
+.layer-item .layer-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background: var(--bg4);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.layer-item .layer-thumb canvas { width: 100%; height: 100%; object-fit: contain; }
+.layer-item .layer-name { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.layer-item .layer-type {
+  font-size: 10px;
+  color: var(--text3);
+  background: var(--bg4);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* Size list */
+.size-list { display: flex; flex-direction: column; gap: 6px; }
+.size-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all 0.1s;
+  position: relative;
+}
+.size-card:hover { border-color: var(--border2); }
+.size-card.active { border-color: var(--accent); background: var(--accent-bg); }
+.size-card.has-zone::after {
+  content: '✓';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--success);
+  font-size: 12px;
+}
+.size-card-header { display: flex; align-items: center; gap: 6px; }
+.size-check { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
+.size-name { font-size: 13px; font-weight: 500; flex: 1; }
+.size-dim { font-size: 11px; color: var(--text3); }
+.size-zone-info { font-size: 11px; color: var(--text2); margin-top: 4px; padding-left: 20px; }
+
+/* Add size form */
+.add-size-form {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  margin-top: 8px;
+  display: none;
+}
+.add-size-form.open { display: block; }
+.form-row { display: flex; gap: 6px; margin-bottom: 6px; }
+.form-row input, .form-row select {
+  flex: 1;
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 12px;
+}
+.form-row input::placeholder { color: var(--text3); }
+.form-row label { font-size: 12px; color: var(--text2); display: flex; align-items: center; }
+
+/* Buttons */
+.btn {
+  border: 1px solid var(--border2);
+  background: var(--bg4);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--bg3); border-color: var(--border2); }
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 500;
+}
+.btn-primary:hover { background: #6c5fe0; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-full { width: 100%; justify-content: center; }
+.btn-danger { border-color: rgba(226,75,75,0.3); color: var(--danger); }
+.btn-danger:hover { background: rgba(226,75,75,0.1); }
+
+/* Canvas area */
+.canvas-container {
+  position: relative;
+  display: inline-block;
+  cursor: crosshair;
+  user-select: none;
+}
+.canvas-container canvas { display: block; }
+
+.canvas-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.canvas-panel {
+  flex: 1;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.canvas-panel-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.canvas-panel-body {
+  padding: 16px;
+  overflow: auto;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #141416;
+}
+
+/* Selection overlay */
+.selection-rect {
+  position: absolute;
+  border: 2px solid var(--accent2);
+  background: rgba(124,111,239,0.12);
+  pointer-events: none;
+}
+.selection-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--accent2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: all;
+  cursor: nwse-resize;
+}
+
+/* Zone labels */
+.zone-badge {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.zone-visual { background: rgba(124,111,239,0.85); color: #fff; }
+.zone-text { background: rgba(240,160,48,0.85); color: #fff; }
+.zone-safe { background: rgba(62,207,142,0.85); color: #fff; }
+
+/* Results grid */
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.result-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.result-card canvas { width: 100%; display: block; }
+.result-card-footer {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.result-card-name { font-size: 12px; font-weight: 500; }
+.result-card-dim { font-size: 11px; color: var(--text3); }
+
+/* Tabs */
+.tabs { display: flex; gap: 2px; }
+.tab {
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text2);
+  border: none;
+  background: transparent;
+  transition: all 0.1s;
+}
+.tab.active { background: var(--accent-bg); color: var(--accent2); }
+.tab:hover:not(.active) { background: var(--bg4); color: var(--text); }
+
+/* Pane */
+.pane { display: none; }
+.pane.active { display: block; }
+
+/* Zone editor panel */
+.zone-editor {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  width: 240px;
+  min-width: 240px;
+}
+.zone-editor h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.zone-type-btns { display: flex; gap: 4px; margin-bottom: 12px; }
+.zone-type-btn {
+  flex: 1;
+  padding: 5px 0;
+  font-size: 11px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--bg4);
+  color: var(--text2);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.1s;
+}
+.zone-type-btn.active-visual { background: rgba(124,111,239,0.2); border-color: var(--accent); color: var(--accent2); }
+.zone-type-btn.active-text { background: rgba(240,160,48,0.2); border-color: var(--warn); color: var(--warn); }
+.zone-type-btn.active-safe { background: rgba(62,207,142,0.2); border-color: var(--success); color: var(--success); }
+
+.zone-field { margin-bottom: 8px; }
+.zone-field label { font-size: 11px; color: var(--text3); display: block; margin-bottom: 3px; }
+.zone-field input {
+  width: 100%;
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 12px;
+}
+.zone-field input:focus { outline: none; border-color: var(--accent); }
+
+.zones-list { margin-top: 10px; }
+.zones-list-title { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+.zone-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--bg3);
+  border-radius: 6px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.zone-tag:hover { border-color: var(--border2); }
+.zone-tag.selected-zone { border-color: var(--accent); }
+.zone-tag .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-visual { background: var(--accent); }
+.dot-text { background: var(--warn); }
+.dot-safe { background: var(--success); }
+.zone-tag .ztname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zone-tag .zdel { color: var(--text3); font-size: 14px; cursor: pointer; padding: 0 2px; }
+.zone-tag .zdel:hover { color: var(--danger); }
+
+/* Layer assignment */
+.layer-assign {
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.layer-assign-title { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+.layer-assign-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+  font-size: 12px;
+}
+.layer-assign-row select {
+  flex: 1;
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+/* Status bar */
+.statusbar {
+  height: 28px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--text3);
+}
+.statusbar span { display: flex; align-items: center; gap: 4px; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); }
+.status-dot.ok { background: var(--success); }
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--text3);
+  gap: 8px;
+}
+.empty-state .empty-icon { font-size: 40px; opacity: 0.3; }
+.empty-state p { font-size: 13px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+/* Alert */
+.alert {
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  margin-bottom: 8px;
+  display: none;
+}
+.alert.show { display: block; }
+.alert-warn { background: rgba(240,160,48,0.15); border: 1px solid rgba(240,160,48,0.3); color: var(--warn); }
+.alert-success { background: rgba(62,207,142,0.15); border: 1px solid rgba(62,207,142,0.3); color: var(--success); }
+
+/* Tooltip */
+[data-tip] { position: relative; }
+[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #000;
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* Progress */
+.progress-bar {
+  height: 3px;
+  background: var(--bg4);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+  display: none;
+}
+.progress-bar.show { display: block; }
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.2s;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>入口图生成工具</h1>
+    <p>PSD 解析 · 框选定位 · 批量导出</p>
+  </div>
+
+  <div class="sidebar-body">
+    <!-- Upload -->
+    <div class="section-title">源文件</div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept=".psd,.png,.jpg,.jpeg,.webp">
+      <div class="icon">📁</div>
+      <p><strong>点击上传</strong> 或拖拽文件至此</p>
+      <p>.psd / .png / .jpg</p>
+    </div>
+    <div id="alertBox" class="alert alert-warn"></div>
+
+    <!-- PSD Layers -->
+    <div id="layerSection" style="display:none;">
+      <div class="section-title" style="margin-top:12px;">图层 <span id="layerCount" style="color:var(--text2);font-weight:400;"></span></div>
+      <div id="layerList" class="layer-list"></div>
+    </div>
+
+    <!-- Output Sizes -->
+    <div class="section-title" style="margin-top:12px;">输出尺寸</div>
+    <div id="sizeList" class="size-list"></div>
+
+    <button class="btn btn-sm" id="addSizeBtn" style="margin-top:6px; width:100%; justify-content:center;">＋ 新增尺寸</button>
+    <div class="add-size-form" id="addSizeForm">
+      <div class="form-row">
+        <input type="text" id="newSizeName" placeholder="名称，如：首页 banner">
+      </div>
+      <div class="form-row">
+        <input type="number" id="newSizeW" placeholder="宽 px" min="1">
+        <input type="number" id="newSizeH" placeholder="高 px" min="1">
+      </div>
+      <div class="form-row">
+        <button class="btn btn-sm btn-primary" id="confirmAddSize">添加</button>
+        <button class="btn btn-sm" id="cancelAddSize">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="btn btn-primary btn-full" id="generateBtn">⚡ 生成勾选尺寸</button>
+    <button class="btn btn-full btn-sm" id="downloadAllBtn" style="display:none;">⬇ 全部下载</button>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="tabs">
+      <button class="tab active" data-tab="editor">区域定义</button>
+      <button class="tab" data-tab="results">生成结果</button>
+    </div>
+    <div style="flex:1;"></div>
+    <span style="font-size:12px;color:var(--text3);" id="activeHint">选择一个输出尺寸后开始框选</span>
+  </div>
+
+  <div class="workspace">
+    <!-- Editor pane -->
+    <div class="pane active" id="pane-editor">
+      <div id="emptyEditorState" class="empty-state">
+        <div class="empty-icon">🖼</div>
+        <p>上传 PSD 或图片后，在左侧选择一个输出尺寸<br>然后在画面上框选主视觉区域和文字区域</p>
+      </div>
+      <div id="editorContent" style="display:none;">
+        <div class="canvas-wrap">
+          <div style="flex:1;">
+            <div class="canvas-panel">
+              <div class="canvas-panel-header">
+                <span id="canvasPanelTitle">主视图</span>
+                <span style="flex:1;"></span>
+                <span id="canvasScaleInfo" style="font-size:11px;color:var(--text3);"></span>
+              </div>
+              <div class="canvas-panel-body" id="canvasPanelBody">
+                <div class="canvas-container" id="canvasContainer">
+                  <canvas id="mainCanvas"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone editor -->
+          <div class="zone-editor">
+            <h3>区域定义</h3>
+
+            <div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.6;">
+              在画面上拖拽框选，然后设置该区域的用途
+            </div>
+
+            <div class="zone-type-btns">
+              <div class="zone-type-btn active-visual" id="zoneTypeVisual" data-type="visual">主视觉</div>
+              <div class="zone-type-btn" id="zoneTypeText" data-type="text">文字区</div>
+              <div class="zone-type-btn" id="zoneTypeSafe" data-type="safe">安全区</div>
+            </div>
+
+            <div class="zone-field">
+              <label>区域名称</label>
+              <input type="text" id="zoneName" placeholder="如：商品主图">
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+              <div class="zone-field">
+                <label>X (px)</label>
+                <input type="number" id="zoneX" readonly>
+              </div>
+              <div class="zone-field">
+                <label>Y (px)</label>
+                <input type="number" id="zoneY" readonly>
+              </div>
+              <div class="zone-field">
+                <label>宽 (px)</label>
+                <input type="number" id="zoneW" readonly>
+              </div>
+              <div class="zone-field">
+                <label>高 (px)</label>
+                <input type="number" id="zoneH" readonly>
+              </div>
+            </div>
+
+            <button class="btn btn-primary btn-full" id="addZoneBtn" style="margin-top:8px;">＋ 保存此区域</button>
+            <button class="btn btn-full btn-sm" id="clearSelBtn" style="margin-top:4px;">清除选框</button>
+
+            <!-- Zones for current size -->
+            <div class="zones-list" id="zonesList">
+              <div class="zones-list-title">当前尺寸的区域</div>
+              <div id="zonesListBody"></div>
+            </div>
+
+            <!-- Layer assignment (PSD only) -->
+            <div class="layer-assign" id="layerAssignSection" style="display:none;">
+              <div class="layer-assign-title">图层分配（PSD）</div>
+              <div class="layer-assign-row">
+                <span style="color:var(--accent2);font-size:11px;width:48px;">主视觉</span>
+                <select id="layerForVisual"><option value="">-- 选择图层 --</option></select>
+              </div>
+              <div class="layer-assign-row">
+                <span style="color:var(--warn);font-size:11px;width:48px;">文字组</span>
+                <select id="layerForText"><option value="">-- 选择图层 --</option></select>
+              </div>
+              <div class="layer-assign-row">
+                <span style="color:var(--text2);font-size:11px;width:48px;">背景层</span>
+                <select id="layerForBg"><option value="">-- 选择图层 --</option></select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results pane -->
+    <div class="pane" id="pane-results">
+      <div id="emptyResultState" class="empty-state">
+        <div class="empty-icon">⚡</div>
+        <p>还没有生成结果<br>返回「区域定义」配置好各尺寸后点击生成</p>
+      </div>
+      <div id="resultsContent" style="display:none;">
+        <div class="results-grid" id="resultsGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span><span class="status-dot" id="statusDot"></span><span id="statusText">等待上传</span></span>
+    <span id="statusExtra"></span>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+const state = {
+  psd: null,
+  layers: [],          // {name, type, canvas, x, y, w, h}
+  compositeCanvas: null,  // full composite
+  sizes: [],           // {id, name, w, h, checked, zones:[], layerMap:{}}
+  activeSize: null,
+  currentDraw: null,   // {x,y,w,h} in image coords
+  activeZone: null,    // selected zone tag
+  drawingType: 'visual',
+  scale: 1,
+  results: [],         // {sizeId, canvas}
+};
+
+const DEFAULT_SIZES = [
+  { id: uid(), name: '首页 Banner', w: 750, h: 360, checked: true, zones: [], layerMap: {} },
+  { id: uid(), name: '频道入口 2:1', w: 375, h: 188, checked: true, zones: [], layerMap: {} },
+  { id: uid(), name: '方形入口', w: 375, h: 375, checked: false, zones: [], layerMap: {} },
+  { id: uid(), name: '竖版入口 3:4', w: 375, h: 500, checked: false, zones: [], layerMap: {} },
+];
+
+function uid() { return Math.random().toString(36).slice(2, 8); }
+
+// ─── DOM refs ────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const uploadZone = $('uploadZone');
+const fileInput = $('fileInput');
+const layerList = $('layerList');
+const sizeList = $('sizeList');
+const mainCanvas = $('mainCanvas');
+const ctx = mainCanvas.getContext('2d');
+const canvasContainer = $('canvasContainer');
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+state.sizes = DEFAULT_SIZES.map(s => ({ ...s, zones: [], layerMap: {} }));
+renderSizes();
+
+// ─── Upload ──────────────────────────────────────────────────────────────────
+uploadZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+
+async function handleFile(file) {
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  setStatus('解析中…', false);
+
+  if (ext === 'psd') {
+    await loadPSD(file);
+  } else if (['png','jpg','jpeg','webp'].includes(ext)) {
+    await loadImage(file);
+  } else {
+    showAlert('不支持的格式，请上传 .psd / .png / .jpg 文件');
+  }
+}
+
+async function loadImage(file) {
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.width; c.height = img.height;
+      c.getContext('2d').drawImage(img, 0, 0);
+      state.compositeCanvas = c;
+      state.layers = [{ name: file.name, type: 'image', canvas: c, x: 0, y: 0, w: img.width, h: img.height }];
+      $('layerSection').style.display = 'none';
+      onSourceLoaded();
+      setStatus(`图片已加载 ${img.width}×${img.height}px`, true);
+      resolve();
+    };
+    img.src = url;
+  });
+}
+
+async function loadPSD(file) {
+  try {
+    if (!window.PSD) { showAlert('PSD 解析库加载中，请稍候重试…'); return; }
+    const buffer = await file.arrayBuffer();
+    const psd = await PSD.fromArrayBuffer(buffer);
+    await psd.parse();
+    state.psd = psd;
+
+    const composite = psd.image.toPng();
+    state.compositeCanvas = composite;
+
+    // Extract layers
+    state.layers = [];
+    function extractLayers(node, depth = 0) {
+      if (node.isRoot()) {
+        node.children().forEach(c => extractLayers(c, depth));
+        return;
+      }
+      if (node.layer && node.layer.image) {
+        try {
+          const lc = node.toPng ? node.toPng() : null;
+          state.layers.push({
+            name: node.name || ('Layer ' + state.layers.length),
+            type: node.type || 'pixel',
+            canvas: lc,
+            x: node.layer.left,
+            y: node.layer.top,
+            w: node.width ? node.width() : 0,
+            h: node.height ? node.height() : 0,
+          });
+        } catch(e) {}
+      }
+      if (node.hasChildren()) node.children().forEach(c => extractLayers(c, depth + 1));
+    }
+    extractLayers(psd.tree());
+
+    renderLayers();
+    $('layerSection').style.display = 'block';
+    $('layerCount').textContent = `(${state.layers.length})`;
+    $('layerAssignSection').style.display = 'block';
+    updateLayerSelects();
+    onSourceLoaded();
+    setStatus(`PSD 已解析，${state.layers.length} 个图层，${psd.header.width}×${psd.header.height}px`, true);
+  } catch(e) {
+    console.error(e);
+    showAlert('PSD 解析失败：' + e.message + '。可改用导出的 PNG/JPG。');
+    setStatus('解析失败', false);
+  }
+}
+
+function onSourceLoaded() {
+  $('emptyEditorState').style.display = 'none';
+  $('editorContent').style.display = 'block';
+  drawComposite();
+  if (state.sizes.length > 0 && !state.activeSize) {
+    activateSize(state.sizes[0]);
+  }
+}
+
+// ─── Draw composite ──────────────────────────────────────────────────────────
+function drawComposite() {
+  const src = state.compositeCanvas;
+  if (!src) return;
+  const maxW = $('canvasPanelBody').clientWidth - 32 || 600;
+  const maxH = 520;
+  const scaleW = maxW / src.width;
+  const scaleH = maxH / src.height;
+  state.scale = Math.min(1, scaleW, scaleH);
+
+  mainCanvas.width = Math.round(src.width * state.scale);
+  mainCanvas.height = Math.round(src.height * state.scale);
+  ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+
+  // Checker pattern for transparency
+  const checker = createCheckerPattern();
+  ctx.fillStyle = ctx.createPattern(checker, 'repeat');
+  ctx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+
+  ctx.drawImage(src, 0, 0, mainCanvas.width, mainCanvas.height);
+  $('canvasScaleInfo').textContent = `${src.width}×${src.height}  |  显示 ${Math.round(state.scale * 100)}%`;
+
+  drawZoneOverlays();
+  drawCurrentSelection();
+}
+
+function createCheckerPattern() {
+  const c = document.createElement('canvas');
+  c.width = 16; c.height = 16;
+  const cx = c.getContext('2d');
+  cx.fillStyle = '#2a2a2a'; cx.fillRect(0,0,16,16);
+  cx.fillStyle = '#222'; cx.fillRect(0,0,8,8); cx.fillRect(8,8,8,8);
+  return c;
+}
+
+// ─── Zone overlays ───────────────────────────────────────────────────────────
+function drawZoneOverlays() {
+  if (!state.activeSize) return;
+  const s = state.scale;
+  // Remove old overlays
+  canvasContainer.querySelectorAll('.zone-badge,.selection-rect').forEach(el => {
+    if (!el.classList.contains('current-sel')) el.remove();
+  });
+
+  state.activeSize.zones.forEach(z => {
+    const colors = { visual: 'rgba(124,111,239,0.2)', text: 'rgba(240,160,48,0.2)', safe: 'rgba(62,207,142,0.1)' };
+    const borders = { visual: '#7c6fef', text: '#f0a030', safe: '#3ecf8e' };
+    const div = document.createElement('div');
+    div.style.cssText = `position:absolute;left:${z.x*s}px;top:${z.y*s}px;width:${z.w*s}px;height:${z.h*s}px;border:2px solid ${borders[z.type]};background:${colors[z.type]};pointer-events:none;`;
+    div.dataset.zoneId = z.id;
+
+    const label = document.createElement('div');
+    label.className = 'zone-badge zone-' + z.type;
+    label.textContent = z.name;
+    label.style.cssText = `position:absolute;top:-1px;left:-1px;`;
+    div.appendChild(label);
+    canvasContainer.appendChild(div);
+  });
+}
+
+// ─── Mouse drawing ───────────────────────────────────────────────────────────
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+
+canvasContainer.addEventListener('mousedown', e => {
+  if (!state.compositeCanvas) return;
+  isDragging = true;
+  const rect = mainCanvas.getBoundingClientRect();
+  dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  state.currentDraw = null;
+  clearCurrentSel();
+});
+
+canvasContainer.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  const rect = mainCanvas.getBoundingClientRect();
+  const ex = e.clientX - rect.left;
+  const ey = e.clientY - rect.top;
+  const x = Math.min(dragStart.x, ex);
+  const y = Math.min(dragStart.y, ey);
+  const w = Math.abs(ex - dragStart.x);
+  const h = Math.abs(ey - dragStart.y);
+  const s = state.scale;
+
+  state.currentDraw = {
+    x: Math.round(x / s), y: Math.round(y / s),
+    w: Math.round(w / s), h: Math.round(h / s),
+  };
+
+  updateCurrentSelUI(x, y, w, h);
+  updateZoneFields();
+});
+
+canvasContainer.addEventListener('mouseup', () => { isDragging = false; });
+canvasContainer.addEventListener('mouseleave', () => { isDragging = false; });
+
+let currentSelEl = null;
+function clearCurrentSel() {
+  if (currentSelEl) { currentSelEl.remove(); currentSelEl = null; }
+}
+
+function updateCurrentSelUI(x, y, w, h) {
+  if (!currentSelEl) {
+    currentSelEl = document.createElement('div');
+    currentSelEl.className = 'current-sel';
+    currentSelEl.style.cssText = `position:absolute;border:2px dashed rgba(255,255,255,0.7);background:rgba(255,255,255,0.06);pointer-events:none;`;
+    canvasContainer.appendChild(currentSelEl);
+  }
+  currentSelEl.style.left = x + 'px';
+  currentSelEl.style.top = y + 'px';
+  currentSelEl.style.width = w + 'px';
+  currentSelEl.style.height = h + 'px';
+}
+
+function updateZoneFields() {
+  const d = state.currentDraw;
+  if (!d) return;
+  $('zoneX').value = d.x;
+  $('zoneY').value = d.y;
+  $('zoneW').value = d.w;
+  $('zoneH').value = d.h;
+}
+
+$('clearSelBtn').addEventListener('click', () => {
+  state.currentDraw = null;
+  clearCurrentSel();
+  ['zoneX','zoneY','zoneW','zoneH'].forEach(id => $(id).value = '');
+});
+
+// ─── Zone type selection ──────────────────────────────────────────────────────
+let activeZoneType = 'visual';
+document.querySelectorAll('.zone-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activeZoneType = btn.dataset.type;
+    document.querySelectorAll('.zone-type-btn').forEach(b => {
+      b.className = 'zone-type-btn';
+    });
+    btn.classList.add('active-' + activeZoneType);
+  });
+});
+
+// ─── Add zone ─────────────────────────────────────────────────────────────────
+$('addZoneBtn').addEventListener('click', () => {
+  if (!state.activeSize) { showAlert('请先在左侧选择一个输出尺寸'); return; }
+  const d = state.currentDraw;
+  if (!d || d.w < 4 || d.h < 4) { showAlert('请先在画面上拖拽框选区域'); return; }
+  const name = $('zoneName').value.trim() || { visual:'主视觉', text:'文字区', safe:'安全区' }[activeZoneType];
+  const zone = { id: uid(), type: activeZoneType, name, x: d.x, y: d.y, w: d.w, h: d.h };
+  state.activeSize.zones.push(zone);
+  clearCurrentSel();
+  state.currentDraw = null;
+  $('zoneName').value = '';
+  renderZonesList();
+  renderSizes();
+  drawZoneOverlays();
+});
+
+// ─── Zones list ───────────────────────────────────────────────────────────────
+function renderZonesList() {
+  const body = $('zonesListBody');
+  body.innerHTML = '';
+  if (!state.activeSize) return;
+  state.activeSize.zones.forEach(z => {
+    const tag = document.createElement('div');
+    tag.className = 'zone-tag';
+    tag.dataset.zid = z.id;
+    tag.innerHTML = `
+      <div class="dot dot-${z.type}"></div>
+      <span class="ztname">${z.name}</span>
+      <span style="font-size:10px;color:var(--text3);">${z.w}×${z.h}</span>
+      <span class="zdel" title="删除">×</span>
+    `;
+    tag.querySelector('.zdel').addEventListener('click', e => {
+      e.stopPropagation();
+      state.activeSize.zones = state.activeSize.zones.filter(zz => zz.id !== z.id);
+      renderZonesList(); renderSizes(); drawComposite();
+    });
+    body.appendChild(tag);
+  });
+}
+
+// ─── Sizes ───────────────────────────────────────────────────────────────────
+function renderSizes() {
+  sizeList.innerHTML = '';
+  state.sizes.forEach(sz => {
+    const card = document.createElement('div');
+    card.className = 'size-card' + (state.activeSize && state.activeSize.id === sz.id ? ' active' : '') + (sz.zones.length > 0 ? ' has-zone' : '');
+    card.innerHTML = `
+      <div class="size-card-header">
+        <input type="checkbox" class="size-check" ${sz.checked ? 'checked' : ''}>
+        <span class="size-name">${sz.name}</span>
+        <span class="size-dim">${sz.w}×${sz.h}</span>
+      </div>
+      ${sz.zones.length > 0 ? `<div class="size-zone-info">${sz.zones.length} 个区域已定义</div>` : ''}
+    `;
+    card.querySelector('.size-check').addEventListener('change', e => {
+      sz.checked = e.target.checked;
+      e.stopPropagation();
+    });
+    card.addEventListener('click', e => {
+      if (e.target.classList.contains('size-check')) return;
+      activateSize(sz);
+    });
+    sizeList.appendChild(card);
+  });
+}
+
+function activateSize(sz) {
+  state.activeSize = sz;
+  $('activeHint').textContent = `当前：${sz.name}（${sz.w}×${sz.h}）· 拖拽框选区域`;
+  $('canvasPanelTitle').textContent = `主视图 → ${sz.name}`;
+  clearCurrentSel();
+  state.currentDraw = null;
+  renderSizes();
+  renderZonesList();
+  drawComposite();
+  if (state.layers.length > 0) updateLayerSelectsForSize(sz);
+}
+
+// ─── Add size form ────────────────────────────────────────────────────────────
+$('addSizeBtn').addEventListener('click', () => {
+  $('addSizeForm').classList.toggle('open');
+});
+$('cancelAddSize').addEventListener('click', () => {
+  $('addSizeForm').classList.remove('open');
+});
+$('confirmAddSize').addEventListener('click', () => {
+  const name = $('newSizeName').value.trim();
+  const w = parseInt($('newSizeW').value);
+  const h = parseInt($('newSizeH').value);
+  if (!name || !w || !h) { showAlert('请填写名称和尺寸'); return; }
+  state.sizes.push({ id: uid(), name, w, h, checked: true, zones: [], layerMap: {} });
+  $('addSizeForm').classList.remove('open');
+  $('newSizeName').value = ''; $('newSizeW').value = ''; $('newSizeH').value = '';
+  renderSizes();
+});
+
+// ─── Layer rendering ──────────────────────────────────────────────────────────
+function renderLayers() {
+  layerList.innerHTML = '';
+  state.layers.forEach((l, i) => {
+    const item = document.createElement('div');
+    item.className = 'layer-item';
+    const thumb = document.createElement('div');
+    thumb.className = 'layer-thumb';
+    if (l.canvas) {
+      const tc = document.createElement('canvas');
+      tc.width = 28; tc.height = 28;
+      tc.getContext('2d').drawImage(l.canvas, l.x, l.y, l.w, l.h, 0, 0, 28, 28);
+      thumb.appendChild(tc);
+    }
+    item.innerHTML = `<span class="layer-name" title="${l.name}">${l.name}</span><span class="layer-type">${l.type}</span>`;
+    item.prepend(thumb);
+    layerList.appendChild(item);
+  });
+}
+
+function updateLayerSelects() {
+  const opts = '<option value="">-- 不使用 --</option>' +
+    state.layers.map((l,i) => `<option value="${i}">${l.name}</option>`).join('');
+  ['layerForVisual','layerForText','layerForBg'].forEach(id => $(id).innerHTML = opts);
+}
+
+function updateLayerSelectsForSize(sz) {
+  const lm = sz.layerMap || {};
+  $('layerForVisual').value = lm.visual !== undefined ? lm.visual : '';
+  $('layerForText').value   = lm.text !== undefined ? lm.text : '';
+  $('layerForBg').value     = lm.bg !== undefined ? lm.bg : '';
+}
+
+['layerForVisual','layerForText','layerForBg'].forEach((id, i) => {
+  $(id).addEventListener('change', e => {
+    if (!state.activeSize) return;
+    const keys = ['visual','text','bg'];
+    state.activeSize.layerMap[keys[i]] = e.target.value !== '' ? parseInt(e.target.value) : undefined;
+  });
+});
+
+// ─── Generate ─────────────────────────────────────────────────────────────────
+$('generateBtn').addEventListener('click', generateAll);
+
+async function generateAll() {
+  if (!state.compositeCanvas) { showAlert('请先上传图片或 PSD'); return; }
+  const targets = state.sizes.filter(s => s.checked);
+  if (targets.length === 0) { showAlert('请至少勾选一个输出尺寸'); return; }
+
+  state.results = [];
+  $('resultsContent').style.display = 'none';
+  $('emptyResultState').style.display = 'flex';
+
+  for (const sz of targets) {
+    const result = await renderSize(sz);
+    state.results.push({ sizeId: sz.id, name: sz.name, w: sz.w, h: sz.h, canvas: result });
+  }
+
+  renderResults();
+  switchTab('results');
+}
+
+async function renderSize(sz) {
+  const out = document.createElement('canvas');
+  out.width = sz.w; out.height = sz.h;
+  const octx = out.getContext('2d');
+
+  // Background fill
+  octx.fillStyle = '#ffffff';
+  octx.fillRect(0, 0, sz.w, sz.h);
+
+  const src = state.compositeCanvas;
+  const lm = sz.layerMap || {};
+
+  // Find visual zone
+  const visualZone = sz.zones.find(z => z.type === 'visual');
+  const textZone   = sz.zones.find(z => z.type === 'text');
+
+  // Source dimensions
+  const srcW = src.width, srcH = src.height;
+
+  if (visualZone && (lm.visual !== undefined || !state.psd)) {
+    // If we have a visual zone defined, place source into that zone
+    const layer = lm.visual !== undefined ? state.layers[lm.visual] : null;
+    const srcImg = (layer && layer.canvas) ? layer.canvas : src;
+    const srcX = layer ? layer.x : 0;
+    const srcY = layer ? layer.y : 0;
+    const srcLW = layer ? layer.w : srcW;
+    const srcLH = layer ? layer.h : srcH;
+
+    // Scale source to fit visual zone, maintaining aspect ratio
+    const dstX = visualZone.x * sz.w / srcW;
+    const dstY = visualZone.y * sz.h / srcH;
+    const dstW = visualZone.w * sz.w / srcW;
+    const dstH = visualZone.h * sz.h / srcH;
+
+    octx.drawImage(srcImg, srcX, srcY, srcLW, srcLH, dstX, dstY, dstW, dstH);
+  } else {
+    // No zone: smart fill - scale composite to cover output
+    const scaleX = sz.w / srcW;
+    const scaleY = sz.h / srcH;
+    const scale = Math.max(scaleX, scaleY);
+    const dw = srcW * scale, dh = srcH * scale;
+    const dx = (sz.w - dw) / 2, dy = (sz.h - dh) / 2;
+    octx.drawImage(src, dx, dy, dw, dh);
+  }
+
+  // Overlay text layer if specified
+  if (lm.text !== undefined && state.layers[lm.text]) {
+    const tl = state.layers[lm.text];
+    if (tl.canvas) {
+      const tz = textZone;
+      if (tz) {
+        const dstX = tz.x * sz.w / srcW;
+        const dstY = tz.y * sz.h / srcH;
+        const dstW = tz.w * sz.w / srcW;
+        const dstH = tz.h * sz.h / srcH;
+        octx.drawImage(tl.canvas, tl.x, tl.y, tl.w, tl.h, dstX, dstY, dstW, dstH);
+      } else {
+        octx.drawImage(tl.canvas, 0, 0, sz.w, sz.h);
+      }
+    }
+  }
+
+  // Draw zone boundaries as faint guides in output (optional — omit for clean output)
+  // (skipped for production output)
+
+  return out;
+}
+
+// ─── Render results ───────────────────────────────────────────────────────────
+function renderResults() {
+  const grid = $('resultsGrid');
+  grid.innerHTML = '';
+
+  state.results.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+
+    // Thumbnail canvas
+    const maxThumb = 260;
+    const thumbScale = Math.min(1, maxThumb / r.w, maxThumb / r.h);
+    const tc = document.createElement('canvas');
+    tc.width = Math.round(r.w * thumbScale);
+    tc.height = Math.round(r.h * thumbScale);
+    tc.getContext('2d').drawImage(r.canvas, 0, 0, tc.width, tc.height);
+    tc.style.width = '100%';
+
+    const footer = document.createElement('div');
+    footer.className = 'result-card-footer';
+    footer.innerHTML = `
+      <div>
+        <div class="result-card-name">${r.name}</div>
+        <div class="result-card-dim">${r.w}×${r.h}px</div>
+      </div>
+      <button class="btn btn-sm">↓ 下载</button>
+    `;
+    footer.querySelector('button').addEventListener('click', () => downloadCanvas(r.canvas, `${r.name}_${r.w}x${r.h}.png`));
+
+    card.appendChild(tc);
+    card.appendChild(footer);
+    grid.appendChild(card);
+  });
+
+  $('emptyResultState').style.display = 'none';
+  $('resultsContent').style.display = 'block';
+  $('downloadAllBtn').style.display = 'block';
+  setStatus(`已生成 ${state.results.length} 张图片`, true);
+}
+
+function downloadCanvas(canvas, filename) {
+  const a = document.createElement('a');
+  a.download = filename;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+$('downloadAllBtn').addEventListener('click', () => {
+  state.results.forEach((r, i) => {
+    setTimeout(() => downloadCanvas(r.canvas, `${r.name}_${r.w}x${r.h}.png`), i * 200);
+  });
+});
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + name));
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function setStatus(msg, ok) {
+  $('statusText').textContent = msg;
+  $('statusDot').className = 'status-dot' + (ok ? ' ok' : '');
+}
+
+function showAlert(msg) {
+  const box = $('alertBox');
+  box.textContent = msg;
+  box.classList.add('show');
+  setTimeout(() => box.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
