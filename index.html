@@ -246,6 +246,27 @@
       padding-top: 12px;
       border-top: 1px solid #eef2f7;
     }
+.area-settings {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #eef2f7;
+      border-radius: 16px;
+      background: #fbfcff;
+    }
+
+    .area-settings .area-title {
+      margin-bottom: 10px;
+      color: #344054;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .area-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+    }
+    
 
     .result-grid {
       display: grid;
@@ -350,7 +371,8 @@ background: #fff;
       }
 
       .size-fields,
-      .advanced {
+      .advanced,
+      .area-grid {
         grid-template-columns: 1fr 1fr;
       }
     }
@@ -365,7 +387,8 @@ background: #fff;
       }
 
       .size-fields,
-      .advanced {
+      .advanced,
+      .area-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -392,7 +415,7 @@ background: #fff;
             <option value="cover">铺满裁切：适合视觉入口图</option>
             <option value="contain">完整留白：适合必须保留全部文字</option>
           </select>
-          <div class="hint">每个尺寸可通过 demo/参数微调；如果 demo 只是风格参考，会默认按目标尺寸等比裁切居中填充。</div>
+         <div class="hint">默认按配置尺寸输出，主画面等比裁切铺满主画面区域；demo 默认仅作为半透明参考层预览。</div>
         </div>
         <div class="field">
           <label for="outputFormat">输出格式</label>
@@ -410,8 +433,7 @@ background: #fff;
 
     <section class="panel">
       <h2>2. 配置入口图尺寸</h2>
-      <p class="hint">可以新增任意尺寸。demo 图用于提供该尺寸的构图参考：若上传 demo，会按 demo 比例先推断裁切；也可以手动填写主体安全区参数。</p>
-      <div class="toolbar" style="margin: 16px 0 18px;">
+ <p class="hint">可以新增任意尺寸。请为 demo 明确选择用途，并手动填写主画面区域 X/Y/宽/高、圆角、留白等可解释参数，避免完全依赖图片自动识别。</p>      <div class="toolbar" style="margin: 16px 0 18px;">
         <button id="addSizeBtn" type="button">新增尺寸</button>
         <button id="selectAllBtn" type="button" class="secondary">全选</button>
         <button id="clearAllBtn" type="button" class="ghost">取消全选</button>
@@ -483,6 +505,36 @@ background: #fff;
           <div class="mini-preview">已选择 demo</div>
         </div>
       </div>
+      <div class="area-settings">
+        <div class="area-title">主画面区域设置</div>
+        <div class="area-grid">
+          <div class="field">
+            <label>主画面 X(px)</label>
+            <input class="mainX" type="number" min="0" step="1">
+          </div>
+          <div class="field">
+            <label>主画面 Y(px)</label>
+            <input class="mainY" type="number" min="0" step="1">
+          </div>
+          <div class="field">
+            <label>主画面宽(px)</label>
+            <input class="mainWidth" type="number" min="1" step="1">
+          </div>
+          <div class="field">
+            <label>主画面高(px)</label>
+            <input class="mainHeight" type="number" min="1" step="1">
+          </div>
+          <div class="field">
+            <label>圆角(px)</label>
+            <input class="cornerRadius" type="number" min="0" step="1">
+          </div>
+          <div class="field">
+            <label>留白(px)</label>
+            <input class="padding" type="number" min="0" step="1">
+          </div>
+        </div>
+        <div class="hint">模板图模式会先绘制 demo，再把主画面绘制到该区域；参考/标记模式只在预览显示半透明 demo，不参与最终输出。</div>
+        </div>
       <div class="advanced">
         <div class="field">
           <label>安全区 X(%)</label>
@@ -504,18 +556,26 @@ background: #fff;
             <option value="contain">完整留白</option>
           </select>
         </div>
+         <div class="field">
+          <label>demo 用途</label>
+          <select class="demoRole">
+            <option value="reference">构图参考：仅预览参考层</option>
+            <option value="template">背景/边框模板：写入最终图</option>
+            <option value="marker">文字/icon/安全区标记：仅预览</option>
+          </select>
+        </div>
       </div>
     </article>
   </template>
 
   <script>
-    const STORAGE_KEY = 'entry-image-tool-size-configs-v1';
+    const STORAGE_KEY = 'entry-image-tool-size-configs-v2';
+    const LEGACY_STORAGE_KEY = 'entry-image-tool-size-configs-v1';
     const DEFAULT_SIZES = [
-      { id: crypto.randomUUID(), name: '方形入口 300x300', width: 300, height: 300, enabled: true, focusX: 50, focusY: 50, background: '#ffffff', mode: 'auto' },
-      { id: crypto.randomUUID(), name: '横版 Banner 640x360', width: 640, height: 360, enabled: true, focusX: 50, focusY: 50, background: '#ffffff', mode: 'auto' },
-      { id: crypto.randomUUID(), name: '运营入口 750x420', width: 750, height: 420, enabled: true, focusX: 50, focusY: 50, background: '#ffffff', mode: 'auto' },
-      { id: crypto.randomUUID(), name: '竖版海报 1080x1920', width: 1080, height: 1920, enabled: false, focusX: 50, focusY: 50, background: '#ffffff', mode: 'auto' }
-    ];
+     createDefaultSize('方形入口 300x300', 300, 300, true),
+     createDefaultSize('横版 Banner 640x360', 640, 360, true),
+     createDefaultSize('运营入口 750x420', 750, 420, true),
+     createDefaultSize('竖版海报 1080x1920', 1080, 1920, false)];
 
     const state = {
       masterImage: null,
@@ -553,17 +613,7 @@ background: #fff;
     });
 
     document.querySelector('#addSizeBtn').addEventListener('click', () => {
-      state.sizes.push({
-        id: crypto.randomUUID(),
-        name: '新入口图尺寸',
-        width: 800,
-        height: 450,
-        enabled: true,
-        focusX: 50,
-        focusY: 50,
-        background: '#ffffff',
-        mode: 'auto'
-      });
+     state.sizes.push(createDefaultSize('新入口图尺寸', 800, 450, true));
       saveSizes();
       renderSizes();
     });
@@ -598,9 +648,30 @@ background: #fff;
 
     renderSizes();
 
+     function createDefaultSize(name, width, height, enabled = true) {
+      return {
+        id: crypto.randomUUID(),
+        name,
+        width,
+        height,
+        enabled,
+        mainX: 0,
+        mainY: 0,
+        mainWidth: width,
+        mainHeight: height,
+        cornerRadius: 0,
+        padding: 0,
+        focusX: 50,
+        focusY: 50,
+        background: '#ffffff',
+        mode: 'auto',
+        demoRole: 'reference'
+      };
+    }
+
     function loadSizes() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+         const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
         if (!raw) return DEFAULT_SIZES.map((size) => ({ ...size, id: crypto.randomUUID() }));
         const parsed = JSON.parse(raw);
         if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('empty config');
@@ -611,16 +682,25 @@ background: #fff;
     }
 
     function normalizeSize(size) {
+      const width = Math.max(1, Number(size.width) || 300);
+      const height = Math.max(1, Number(size.height) || 300);
       return {
         id: size.id || crypto.randomUUID(),
         name: String(size.name || '入口图尺寸'),
-        width: Number(size.width) || 300,
-        height: Number(size.height) || 300,
+        width,
+        height,
         enabled: Boolean(size.enabled),
+        mainX: clamp(Number(size.mainX) || 0, 0, width),
+        mainY: clamp(Number(size.mainY) || 0, 0, height),
+        mainWidth: Math.max(1, Number(size.mainWidth) || width),
+        mainHeight: Math.max(1, Number(size.mainHeight) || height),
+        cornerRadius: Math.max(0, Number(size.cornerRadius) || 0),
+        padding: Math.max(0, Number(size.padding) || 0),
         focusX: clamp(Number(size.focusX) || 50, 0, 100),
         focusY: clamp(Number(size.focusY) || 50, 0, 100),
         background: String(size.background || '#ffffff'),
-        mode: ['auto', 'cover', 'contain'].includes(size.mode) ? size.mode : 'auto'
+        mode: ['auto', 'cover', 'contain'].includes(size.mode) ? size.mode : 'auto',
+        demoRole: ['reference', 'template', 'marker'].includes(size.demoRole) ? size.demoRole : 'reference'
       };
     }
 
@@ -638,30 +718,51 @@ function renderSizes() {
         const height = item.querySelector('.height');
         const demo = item.querySelector('.demo');
         const miniPreview = item.querySelector('.mini-preview');
+        const mainX = item.querySelector('.mainX');
+        const mainY = item.querySelector('.mainY');
+        const mainWidth = item.querySelector('.mainWidth');
+        const mainHeight = item.querySelector('.mainHeight');
+        const cornerRadius = item.querySelector('.cornerRadius');
+        const padding = item.querySelector('.padding');
         const focusX = item.querySelector('.focusX');
         const focusY = item.querySelector('.focusY');
         const background = item.querySelector('.background');
         const mode = item.querySelector('.mode');
+        const demoRole = item.querySelector('.demoRole');
 
         titleText.textContent = `${size.name} · ${size.width}×${size.height}`;
         enabled.checked = size.enabled;
         name.value = size.name;
         width.value = size.width;
         height.value = size.height;
+         mainX.value = size.mainX;
+        mainY.value = size.mainY;
+        mainWidth.value = size.mainWidth;
+        mainHeight.value = size.mainHeight;
+        cornerRadius.value = size.cornerRadius;
+        padding.value = size.padding;
         focusX.value = size.focusX;
         focusY.value = size.focusY;
         background.value = size.background;
         mode.value = size.mode;
+        demoRole.value = size.demoRole;
         miniPreview.classList.toggle('show', state.demoImages.has(size.id));
 
         enabled.addEventListener('change', () => updateSize(size.id, { enabled: enabled.checked }));
         name.addEventListener('input', () => updateSize(size.id, { name: name.value }, false));
         width.addEventListener('input', () => updateSize(size.id, { width: Number(width.value) }, false));
         height.addEventListener('input', () => updateSize(size.id, { height: Number(height.value) }, false));
+        mainX.addEventListener('input', () => updateSize(size.id, { mainX: Number(mainX.value) }, false));
+        mainY.addEventListener('input', () => updateSize(size.id, { mainY: Number(mainY.value) }, false));
+        mainWidth.addEventListener('input', () => updateSize(size.id, { mainWidth: Number(mainWidth.value) }, false));
+        mainHeight.addEventListener('input', () => updateSize(size.id, { mainHeight: Number(mainHeight.value) }, false));
+        cornerRadius.addEventListener('input', () => updateSize(size.id, { cornerRadius: Number(cornerRadius.value) }, false));
+        padding.addEventListener('input', () => updateSize(size.id, { padding: Number(padding.value) }, false));
         focusX.addEventListener('input', () => updateSize(size.id, { focusX: clamp(Number(focusX.value), 0, 100) }, false));
         focusY.addEventListener('input', () => updateSize(size.id, { focusY: clamp(Number(focusY.value), 0, 100) }, false));
         background.addEventListener('input', () => updateSize(size.id, { background: background.value }, false));
         mode.addEventListener('change', () => updateSize(size.id, { mode: mode.value }));
+        demoRole.addEventListener('change', () => updateSize(size.id, { demoRole: demoRole.value }));
         demo.addEventListener('change', async (event) => {
           const file = event.target.files[0];
           if (!file) return;
@@ -691,6 +792,12 @@ function renderSizes() {
       Object.assign(size, patch);
       size.width = Math.max(1, Number(size.width) || 1);
       size.height = Math.max(1, Number(size.height) || 1);
+      size.mainX = clamp(Number(size.mainX) || 0, 0, size.width);
+      size.mainY = clamp(Number(size.mainY) || 0, 0, size.height);
+      size.mainWidth = Math.max(1, Number(size.mainWidth) || size.width);
+      size.mainHeight = Math.max(1, Number(size.mainHeight) || size.height);
+      size.cornerRadius = Math.max(0, Number(size.cornerRadius) || 0);
+      size.padding = Math.max(0, Number(size.padding) || 0);
       size.focusX = clamp(Number(size.focusX) || 50, 0, 100);
       size.focusY = clamp(Number(size.focusY) || 50, 0, 100);
       saveSizes();
@@ -720,93 +827,130 @@ function renderSizes() {
     }
 
     function renderImageForSize(size) {
+      const finalCanvas = renderCanvasForSize(size, false);
+      const previewCanvas = renderCanvasForSize(size, true);
+      const url = finalCanvas.toDataURL('image/png');
+      const previewUrl = previewCanvas.toDataURL('image/png');
+      return {
+        url,
+        previewUrl,
+        name: size.name,
+        width: size.width,
+        height: size.height,
+        demoRole: size.demoRole,
+        fileName: `${safeFileName(state.masterName)}-${safeFileName(size.name)}-${size.width}x${size.height}.png`
+      };
+    }
+
+    function renderCanvasForSize(size, includeReferenceOverlay) {
       const canvas = document.createElement('canvas');
       canvas.width = size.width;
       canvas.height = size.height;
       const context = canvas.getContext('2d');
       const background = size.background.trim() || '#ffffff';
+      const demo = state.demoImages.get(size.id);
       if (background !== 'transparent') {
         context.fillStyle = background;
         context.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      const demo = state.demoImages.get(size.id);
-      const layout = inferLayoutFromDemo(size, demo);
-      const draw = layout.mode === 'contain'
+       if (demo && size.demoRole === 'template') {
+        context.drawImage(demo, 0, 0, canvas.width, canvas.height);
+      }
+
+      drawMasterImage(context, size);
+
+      if (includeReferenceOverlay && demo && size.demoRole !== 'template') {
+        context.save();
+        context.globalAlpha = 0.35;
+        context.drawImage(demo, 0, 0, canvas.width, canvas.height);
+        context.restore();
+      }
+
+      return canvas;
+    }
+
+    function drawMasterImage(context, size) {
+      const area = getMainArea(size);
+      const mode = size.mode === 'auto' ? fitMode.value : size.mode;
+      const draw = mode === 'contain'
     
      
-        ? getContainRect(state.masterImage, canvas.width, canvas.height)
-      : getCoverRect(state.masterImage, canvas.width, canvas.height, layout.focus.x, layout.focus.y);
+      ? getContainRect(state.masterImage, area.width, area.height)
+        : getCoverRect(state.masterImage, area.width, area.height, size.focusX / 100, size.focusY / 100);
 
-      context.drawImage(state.masterImage, draw.sx, draw.sy, draw.sw, draw.sh, draw.dx, draw.dy, draw.dw, draw.dh);
-
-      const mimeType = outputFormat.value;
-      const extension = mimeType === 'image/jpeg' ? 'jpg' : 'png';
-      const url = canvas.toDataURL(mimeType, 0.92);
-      return {
-        url,
-        name: size.name,
-        width: size.width,
-        height: size.height,
-        format: extension.toUpperCase(),
-        fileName: `${safeFileName(state.masterName)}-${safeFileName(size.name)}-${size.width}x${size.height}.${extension}`,
-        layoutNote: layout.note
-      };
+      context.save();
+      roundedRectPath(context, area.x, area.y, area.width, area.height, area.radius);
+      context.clip();
+      context.drawImage(
+        state.masterImage,
+        draw.sx,
+        draw.sy,
+        draw.sw,
+        draw.sh,
+        area.x + draw.dx,
+        area.y + draw.dy,
+        draw.dw,
+        draw.dh
+      );
+      context.restore();
     }
 
-     function inferLayoutFromDemo(size, demo) {
-      const targetAspect = size.width / size.height;
-      const selectedMode = size.mode === 'auto' ? fitMode.value : size.mode;
-      const fallback = {
-        mode: selectedMode,
-        focus: { x: size.focusX / 100, y: size.focusY / 100 },
-        note: selectedMode === 'contain' ? '完整居中留白' : '按目标尺寸居中裁切铺满'
-      };
-      if (ratioDelta < 0.08) {
-        return {
-          mode: selectedMode,
-          focus: fallback.focus,
-          note: `参考 demo ${demo.naturalWidth}×${demo.naturalHeight}，比例接近目标，按目标比例铺满`
-        };
-      }
-      const demoAspect = demo.naturalWidth / demo.naturalHeight;
-      const ratioDelta = Math.abs(targetAspect - demoAspect) / targetAspect;
-      const inferredFocus = {
-        mode: selectedMode,
-        focus: inferredFocus,
-        note: `参考 demo ${demo.naturalWidth}×${demo.naturalHeight}，推断取景焦点后按目标比例铺满`
-      };
-
-      if (selectedMode === 'contain') {
-        return {
-          ...fallback,
-          focus: inferredFocus,
-          note: `参考 demo ${demo.naturalWidth}×${demo.naturalHeight}，完整居中留白`
-        };
-      }
-
-
-      if (ratioDelta < 0.08) return fallback;
-
+    function getMainArea(size) {
+      const outerX = clamp(Number(size.mainX) || 0, 0, size.width);
+      const outerY = clamp(Number(size.mainY) || 0, 0, size.height);
+      const outerWidth = Math.max(1, Number(size.mainWidth) || size.width);
+      const outerHeight = Math.max(1, Number(size.mainHeight) || size.height);
+      const maxWidth = Math.max(1, size.width - outerX);
+      const maxHeight = Math.max(1, size.height - outerY);
+      const boundedOuterWidth = Math.min(outerWidth, maxWidth);
+      const boundedOuterHeight = Math.min(outerHeight, maxHeight);
+      const padding = clamp(Number(size.padding) || 0, 0, Math.min(boundedOuterWidth, boundedOuterHeight) / 2 - 0.5);
+      const width = Math.max(1, boundedOuterWidth - padding * 2);
+      const height = Math.max(1, boundedOuterHeight - padding * 2);
+      const radius = clamp(Number(size.cornerRadius) || 0, 0, Math.min(width, height) / 2);
       return {
-        x: demoRatio > targetRatio ? clamp(size.focusX / 100, 0.35, 0.65) : fallback.x,
-        y: demoRatio < targetRatio ? clamp(size.focusY / 100, 0.35, 0.65) : fallback.y
-      };
-    }
+      x: outerX + padding,
+        y: outerY + padding,
+        width,
+        height,
+        radius
+          };
+    }  
 
-    function getCoverRect(image, targetWidth, targetHeight, focusX, focusY) {
+      function roundedRectPath(context, x, y, width, height, radius) {
+      if (radius <= 0) {
+        context.beginPath();
+        context.rect(x, y, width, height);
+        return;
+      }
+      context.beginPath();
+      context.moveTo(x + radius, y);
+      context.lineTo(x + width - radius, y);
+      context.quadraticCurveTo(x + width, y, x + width, y + radius);
+      context.lineTo(x + width, y + height - radius);
+      context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      context.lineTo(x + radius, y + height);
+      context.quadraticCurveTo(x, y + height, x, y + height - radius);
+      context.lineTo(x, y + radius);
+      context.quadraticCurveTo(x, y, x + radius, y);
+      context.closePath();
+      }
+    
+
+   function getCoverRect(image, targetWidth, targetHeight, focusX, focusY) {
       const sourceRatio = image.naturalWidth / image.naturalHeight;
-      const cropRatio = targetWidth / targetHeight;
+      const targetRatio = targetWidth / targetHeight;
       let sx = 0;
       let sy = 0;
       let sw = image.naturalWidth;
       let sh = image.naturalHeight;
 
-     if (sourceRatio > cropRatio) {
-        sw = image.naturalHeight * cropRatio;
+      if (sourceRatio > targetRatio) {
+        sw = image.naturalHeight * targetRatio;
         sx = (image.naturalWidth - sw) * focusX;
       } else {
-        sh = image.naturalWidth / cropRatio;
+        sh = image.naturalWidth / targetRatio;
         sy = (image.naturalHeight - sh) * focusY;
       }
 
@@ -840,15 +984,25 @@ function renderSizes() {
         card.className = 'result-card';
         card.innerHTML = `
           <div class="result-preview"><img src="${result.url}" alt="${escapeHtml(result.name)} 生成结果"></div>
+          <div class="result-preview"><img src="${result.previewUrl}" alt="${escapeHtml(result.name)} 预览结果"></div>
           <div class="result-meta">
             <strong>${escapeHtml(result.name)}</strong>
-            <span class="hint">${result.width} × ${result.height}px · ${result.format}</span>
-            <span class="hint">${escapeHtml(result.layoutNote)}</span>
+            <span class="hint">${result.width} × ${result.height}px · PNG</span>
+            <span class="hint">${result.width} × ${result.height}px · PNG · ${getDemoRoleLabel(result.demoRole)}</span>
+            <span class="hint">预览可能包含半透明 demo 参考层；下载文件为最终输出图。</span>
             <a class="button" download="${escapeHtml(result.fileName)}" href="${result.url}">下载这张</a>
           </div>
         `;
         resultGrid.appendChild(card);
       });
+    }
+
+    function getDemoRoleLabel(role) {
+      return {
+        reference: 'demo 构图参考',
+        template: 'demo 模板入图',
+        marker: 'demo 标记参考'
+      }[role] || 'demo 构图参考';
     }
 
     function loadImage(file) {
@@ -874,7 +1028,7 @@ function renderSizes() {
       link.click();
       document.body.removeChild(link);
     }
-
+           
     function safeFileName(value) {
       return String(value || 'entry-image')
         .trim()
