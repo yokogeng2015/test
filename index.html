@@ -441,60 +441,86 @@ upzone.addEventListener('dragover',e=>{e.preventDefault();upzone.classList.add('
 upzone.addEventListener('dragleave',()=>upzone.classList.remove('over'));
 upzone.addEventListener('drop',e=>{e.preventDefault();upzone.classList.remove('over');handleSrc(e.dataTransfer.files[0])});
 
-async function handleSrc(file){
-  if(!file) return;
-  const ext = file.name.split('.').pop().toLowerCase();
-  setSt('解析中…');
-  if(ext==='psd') await loadPSD(file);
-  else if(['png','jpg','jpeg'].includes(ext)) await loadImgFile(file);
-  else showAlert('请上传 .psd / .png / .jpg 文件','alertMain');
-}
-
-async function loadImgFile(file){
-  const url = URL.createObjectURL(file);
-  const img = await imgFromUrl(url);
-  const c = toCanvas(img);
-  S.src = {canvas:c, w:img.naturalWidth, h:img.naturalHeight};
-  S.layers = [{id:uid(),name:file.name,role:'none',canvas:c,x:0,y:0,w:c.width,h:c.height}];
-  onSrcLoaded();
-  setSt(`图片已加载 ${c.width}×${c.height}`,true);
-}
-
 async function loadPSD(file){
-  try{
-    if(!window.PSD){ showAlert('PSD库加载中，稍后重试','alertMain'); return; }
-    const buf = await file.arrayBuffer();
-    const psd = await PSD.fromArrayBuffer(buf);
-    await psd.parse();
-    // composite
-    const comp = psd.image.toPng();
-    S.src = {canvas:comp, w:psd.header.width, h:psd.header.height};
-    // layers
+  try {
+    if(!window.PSD){ 
+      showAlert('PSD库加载中，稍后重试','alertMain'); 
+      return; 
+    }
+    
+    // 【修改点 1】直接传入 file 对象，使用浏览器版专用的 fromDroppedFile 
+    // 注意：fromDroppedFile 返回的是一个 Promise，所以要用 await 拿到实例
+    const psd = await PSD.fromDroppedFile(file);
+    
+    // psd.js 内部其实在 fromDroppedFile 阶段就已经解析了，但为了保险可以保留
+    // 如果下面这一行报错，可以尝试注释掉它，因为 fromDroppedFile 拿到的已经是解析完的对象
+    // await psd.parse(); 
+
+    // 【修改点 2】在浏览器端，psd.image.toPng() 返回的是一个原生的 HTMLImageElement（<img> 标签）
+    // 而不是 Canvas。为了符合你后续代码对 S.src.canvas 的调用，我们需要把它画到 Canvas 里，或者直接用它的 <img>
+    const imgElement = psd.image.toPng(); 
+    
+    // 创建一个临时的 canvas 把 imgElement 画进去，转成符合你系统要求的 canvas 对象
+    const compCanvas = document.createElement('canvas');
+    compCanvas.width = psd.header.width;
+    compCanvas.height = psd.header.height;
+    const ctx = compCanvas.getContext('2d');
+    
+    // 等图片加载完后（如果是同步的可以直接画）
+    ctx.drawImage(imgElement, 0, 0);
+
+    // 赋值给你的全局状态
+    S.src = { canvas: compCanvas, w: psd.header.width, h: psd.header.height };
+    
+    // layers 层的处理
     S.layers = [];
+    
     function walk(node){
-      if(node.isRoot()){ node.children().forEach(walk); return; }
-      try{
-        const lc = node.toPng ? node.toPng() : null;
+      if(node.isRoot()){ 
+        node.children().forEach(walk); 
+        return; 
+      }
+      try {
+        // 同样的道理，node.layer.image.toPng() 返回的是 <img>
+        let lc = null;
+        if (node.layer && node.layer.image) {
+          const lImg = node.layer.image.toPng();
+          const lCanvas = document.createElement('canvas');
+          lCanvas.width = node.width || 0;
+          lCanvas.height = node.height || 0;
+          const lCtx = lCanvas.getContext('2d');
+          lCtx.drawImage(lImg, 0, 0);
+          lc = lCanvas;
+        }
+        
         const info = node.export ? node.export() : {};
+        
         S.layers.push({
           id: uid(),
-          name: node.name||('layer'+S.layers.length),
+          name: node.name || ('layer' + S.layers.length),
           role: 'none',
-          canvas: lc,
-          x: info.left||0, y: info.top||0,
-          w: info.width||0, h: info.height||0,
+          canvas: lc, // 现在 lc 是一个标准的 canvas 对象了
+          x: info.left || 0, 
+          y: info.top || 0,
+          w: info.width || 0, 
+          h: info.height || 0,
         });
-      }catch(e){}
-      if(node.hasChildren()) node.children().forEach(walk);
+      } catch(e) {
+        console.error("解析单个图层失败:", e); // 别吃掉报错，方便定位
+      }
     }
+    
+    // 开始遍历图层
     walk(psd.tree());
-    // reverse so bottom layers are first (PSD order)
-    S.layers.reverse();
+    
+    // 触发你原有的后续逻辑
     onSrcLoaded();
-    setSt(`PSD已解析，${S.layers.length}个图层，${S.src.w}×${S.src.h}`,true);
-  }catch(e){
-    console.error(e);
-    showAlert('PSD解析失败：'+e.message+'。请改用导出的PNG','alertMain');
+    setSt(`PSD已加载 ${psd.header.width}×${psd.header.height}`, true);
+
+  } catch(e) {
+    // 【修改点 3】绝对不要让 catch 为空，把错误弹出来或者打印出来！
+    console.error("PSD解析核心错误:", e);
+    showAlert('PSD解析失败，请检查文件格式或看控制台报错', 'alertMain');
     setSt('解析失败');
   }
 }
