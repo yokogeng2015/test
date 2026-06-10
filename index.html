@@ -1,15 +1,15 @@
+
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
+<!-- saved from url=(0296)https://static.coze.site/7642238787023569198-data_volume/files/%E6%89%80%E6%9C%89%E5%AF%B9%E8%AF%9D/%E4%B8%BB%E5%AF%B9%E8%AF%9D/%E5%85%A5%E5%8F%A3%E5%9B%BE%E5%B7%A5%E5%85%B7%E4%BC%98%E5%8C%96/index.html?sign=1783496232-71dd2e88dd-0-7f20b949909e396568556304fb2e2d239e1047be39e7b76d72ba188ce8c43b7e -->
+<html lang="zh-CN" data-kantu="1"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>入口图自动生成工具</title>
+  <title>入口图智能重排生成工具</title>
   <style>
     :root {
-      color-scheme: light;
       --bg: #f5f7fb;
-      --panel: #ffffff;
-      --text: #182033;
+      --panel: #fff;
+      --text: #172033;
       --muted: #667085;
       --brand: #4f46e5;
       --brand-dark: #3730a3;
@@ -19,11 +19,7 @@
       --success: #15803d;
       --shadow: 0 18px 45px rgba(22, 28, 45, 0.08);
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
@@ -32,653 +28,328 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
       line-height: 1.5;
     }
-
-    header {
-      padding: 40px 24px 20px;
-      text-align: center;
+    header { padding: 40px 24px 20px; text-align: center; }
+    header h1 { margin: 0 0 12px; font-size: clamp(28px, 4vw, 44px); letter-spacing: -0.04em; }
+    header p { max-width: 900px; margin: 0 auto; color: var(--muted); font-size: 17px; }
+    main { width: min(1320px, calc(100% - 32px)); margin: 0 auto 48px; display: grid; gap: 20px; }
+    .panel { background: rgba(255,255,255,.94); border: 1px solid rgba(216,222,234,.9); border-radius: 24px; box-shadow: var(--shadow); padding: 24px; backdrop-filter: blur(10px); }
+    .panel h2 { margin: 0 0 14px; font-size: 22px; }
+    .grid { display: grid; grid-template-columns: minmax(0, .95fr) minmax(360px, 1.05fr); gap: 20px; align-items: start; }
+    .field { display: grid; gap: 8px; margin-bottom: 14px; }
+    .fields-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .fields-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .fields-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    label, .label { color: #344054; font-size: 14px; font-weight: 700; }
+    input[type="text"], input[type="number"], input[type="color"], select, textarea {
+      width: 100%; min-height: 42px; border: 1px solid var(--border); border-radius: 12px;
+      padding: 9px 12px; background: #fff; color: var(--text); font-size: 14px;
     }
-
-    header h1 {
-      margin: 0 0 12px;
-      font-size: clamp(28px, 4vw, 44px);
-      letter-spacing: -0.04em;
-    }
-
-    header p {
-      max-width: 820px;
-      margin: 0 auto;
-      color: var(--muted);
-      font-size: 17px;
-    }
-
-    main {
-      width: min(1280px, calc(100% - 32px));
-      margin: 0 auto 48px;
-      display: grid;
-      gap: 20px;
-    }
-
-    .panel {
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(216, 222, 234, 0.9);
-      border-radius: 24px;
-      box-shadow: var(--shadow);
-      padding: 24px;
-      backdrop-filter: blur(10px);
-    }
-
-    .panel h2 {
-      margin: 0 0 14px;
-      font-size: 22px;
-    }
-
-    .panel h3 {
-      margin: 0 0 12px;
-      font-size: 17px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
-      gap: 20px;
-      align-items: start;
-    }
-
-    .field {
-      display: grid;
-      gap: 8px;
-      margin-bottom: 14px;
-    }
-
-    label,
-    .label {
-      color: #344054;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    input[type="text"],
-    input[type="number"],
-    select {
-      width: 100%;
-      min-height: 42px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 9px 12px;
-      background: #fff;
-      color: var(--text);
-      font-size: 14px;
-    }
-
-    input[type="file"] {
-      width: 100%;
-      padding: 12px;
-      border: 1px dashed #a7b4cc;
-      border-radius: 14px;
-      background: #f8fafc;
-    }
-
-    input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      accent-color: var(--brand);
-    }
-
-    .hint {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .preview-box {
-      display: grid;
-      place-items: center;
-      overflow: hidden;
-      min-height: 280px;
-      border: 1px dashed #b7c3d7;
-      border-radius: 20px;
-      background:
-        linear-gradient(45deg, #f4f6fa 25%, transparent 25%),
-        linear-gradient(-45deg, #f4f6fa 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #f4f6fa 75%),
-        linear-gradient(-45deg, transparent 75%, #f4f6fa 75%);
-      background-size: 22px 22px;
-      background-position: 0 0, 0 11px, 11px -11px, -11px 0;
-    }
-
-    .preview-box img {
-      display: block;
-      max-width: 100%;
-      max-height: 420px;
-      object-fit: contain;
-      border-radius: 16px;
-      box-shadow: 0 16px 36px rgba(16, 24, 40, 0.16);
-    }
-
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-    }
-
-    button,
-    .button {
-      appearance: none;
-      border: 0;
-      border-radius: 999px;
-      padding: 11px 18px;
-      background: var(--brand);
-      color: #fff;
-      cursor: pointer;
-      font-weight: 800;
-      text-decoration: none;
-      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-      box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
-    }
-
-    button:hover,
-    .button:hover {
-      background: var(--brand-dark);
-      transform: translateY(-1px);
-    }
-
-    button.secondary,
-    .button.secondary {
-      background: #fff;
-      color: var(--brand);
-      border: 1px solid #c7d2fe;
-      box-shadow: none;
-    }
-
-    button.ghost {
-      background: #fff;
-      color: #344054;
-      border: 1px solid var(--border);
-      box-shadow: none;
-    }
-
-    button.danger {
-      background: #fff;
-      color: var(--danger);
-      border: 1px solid #fecaca;
-      box-shadow: none;
-    }
-
-    .size-list {
-      display: grid;
-      gap: 14px;
-    }
-
-    .size-card {
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: #fff;
-      padding: 16px;
-    }
-
-    .size-head {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-
-    .size-title {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      min-width: 0;
-      font-weight: 900;
-    }
-
-    .size-fields {
-      display: grid;
-      grid-template-columns: 1.35fr 0.75fr 0.75fr 1fr;
-      gap: 10px;
-    }
-
-    .advanced {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid #eef2f7;
-    }
-
-    .area-settings {
-      margin-top: 12px;
-      padding: 12px;
-      border: 1px solid #eef2f7;
-      border-radius: 16px;
-      background: #fbfcff;
-    }
-
-    .area-settings .area-title {
-      margin-bottom: 10px;
-      color: #344054;
-      font-size: 14px;
-      font-weight: 900;
-    }
-
-    .area-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 10px;
-    }
-
-
-    .result-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 16px;
-    }
-
-    .result-card {
-      overflow: hidden;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: #fff;
-    }
-
-    .result-preview {
-      display: grid;
-      place-items: center;
-      min-height: 190px;
-      padding: 12px;
-      background: #f8fafc;
-    }
-
-    .result-preview img {
-      max-width: 100%;
-      max-height: 280px;
-      border-radius: 10px;
-      box-shadow: 0 10px 26px rgba(16, 24, 40, 0.14);
-    }
-
-    .result-meta {
-      padding: 14px;
-      display: grid;
-      gap: 10px;
-    }
-
-    .status {
-      display: none;
-      border-radius: 14px;
-      padding: 12px 14px;
-      background: var(--soft);
-      color: #312e81;
-      font-weight: 700;
-    }
-
-    .status.show {
-      display: block;
-    }
-
-    .status.error {
-      background: #fef2f2;
-      color: var(--danger);
-    }
-
-    .status.success {
-      background: #f0fdf4;
-      color: var(--success);
-    }
-
-    .empty {
-      padding: 28px;
-      border: 1px dashed #b7c3d7;
-      border-radius: 18px;
-      color: var(--muted);
-      text-align: center;
-      background: #f8fafc;
-    }
-
-    .mini-preview {
-      display: none;
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .mini-preview.show {
-      display: block;
-    }
-
-    .rules {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-    }
-
-    .rule-card {
-      border-radius: 18px;
-      background: #f8fafc;
-      border: 1px solid #e4e9f2;
-      padding: 16px;
-    }
-
-    .rule-card strong {
-      display: block;
-      margin-bottom: 6px;
-    }
-
-    @media (max-width: 900px) {
-      .grid,
-      .rules {
-        grid-template-columns: 1fr;
-      }
-
-      .size-fields,
-      .advanced,
-      .area-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-
-    @media (max-width: 560px) {
-      main {
-        width: min(100% - 20px, 1280px);
-      }
-
-      .panel {
-        padding: 18px;
-      }
-
-      .size-fields,
-      .advanced,
-      .area-grid {
-        grid-template-columns: 1fr;
-      }
-    }
+    textarea { min-height: 72px; resize: vertical; }
+    input[type="color"] { padding: 4px; }
+    input[type="file"] { width: 100%; padding: 12px; border: 1px dashed #a7b4cc; border-radius: 14px; background: #f8fafc; }
+    input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--brand); }
+    .hint { color: var(--muted); font-size: 13px; }
+    .preview-box { display: grid; place-items: center; overflow: hidden; min-height: 280px; border: 1px dashed #b7c3d7; border-radius: 20px; background: repeating-conic-gradient(#f4f6fa 0% 25%, transparent 0% 50%) 50% / 22px 22px; }
+    .preview-box img { display: block; max-width: 100%; max-height: 420px; object-fit: contain; border-radius: 16px; box-shadow: 0 16px 36px rgba(16,24,40,.16); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    button, .button { appearance: none; border: 0; border-radius: 999px; padding: 11px 18px; background: var(--brand); color: #fff; cursor: pointer; font-weight: 800; text-decoration: none; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; box-shadow: 0 12px 24px rgba(79,70,229,.22); }
+    button:hover, .button:hover { background: var(--brand-dark); transform: translateY(-1px); }
+    button.secondary, .button.secondary { background: #fff; color: var(--brand); border: 1px solid #c7d2fe; box-shadow: none; }
+    button.ghost { background: #fff; color: #344054; border: 1px solid var(--border); box-shadow: none; }
+    button.danger { background: #fff; color: var(--danger); border: 1px solid #fecaca; box-shadow: none; }
+    button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .size-list { display: grid; gap: 14px; }
+    .size-card { border: 1px solid var(--border); border-radius: 20px; background: #fff; padding: 16px; }
+    .size-head { display: flex; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .size-title { display: flex; gap: 10px; align-items: center; min-width: 0; font-weight: 900; }
+    .size-fields { display: grid; grid-template-columns: 1.2fr .65fr .65fr 1fr; gap: 10px; }
+    .advanced { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #eef2f7; }
+    .layout-note { margin-top: 10px; border-radius: 14px; padding: 10px 12px; background: #f8fafc; color: var(--muted); font-size: 13px; }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .result-card { overflow: hidden; border: 1px solid var(--border); border-radius: 20px; background: #fff; }
+    .result-preview { display: grid; place-items: center; min-height: 190px; padding: 12px; background: #f8fafc; }
+    .result-preview img { max-width: 100%; max-height: 280px; border-radius: 10px; box-shadow: 0 10px 26px rgba(16,24,40,.14); }
+    .result-meta { padding: 14px; display: grid; gap: 10px; }
+    .status { display: none; border-radius: 14px; padding: 12px 14px; background: var(--soft); color: #312e81; font-weight: 700; }
+    .status.show { display: block; }
+    .status.error { background: #fef2f2; color: var(--danger); }
+    .status.success { background: #f0fdf4; color: var(--success); }
+    .empty { padding: 28px; border: 1px dashed #b7c3d7; border-radius: 18px; color: var(--muted); text-align: center; background: #f8fafc; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; background: #eef2ff; color: #3730a3; font-size: 12px; font-weight: 800; }
+    .rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .rule-card { border-radius: 18px; background: #f8fafc; border: 1px solid #e4e9f2; padding: 16px; }
+    .rule-card strong { display: block; margin-bottom: 6px; }
+    @media (max-width: 960px) { .grid, .rules { grid-template-columns: 1fr; } .size-fields, .advanced, .fields-4 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { main { width: min(100% - 20px, 1320px); } .panel { padding: 18px; } .size-fields, .advanced, .fields-2, .fields-3, .fields-4 { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <header>
-    <h1>入口图自动生成工具</h1>
-    <p>上传一张包含文字、icon 等元素的主画面，为每个入口图尺寸配置 demo 或生成参数，勾选后即可批量生成对应尺寸的 PNG 图片。</p>
+    <h1>入口图智能重排生成工具</h1>
+    <p>不是简单裁切：上传一张已设计好的主画面，工具会先尝试从主图中提取文字、logo、角标等视觉块，再按照每个尺寸 demo 提示的位置和大小重新排版生成新图。每个尺寸的 demo 会被分析成文字/logo 的布局提示，自动生成新的入口图。</p>
   </header>
-
   <main>
     <section class="panel grid" aria-label="主画面上传和预览">
       <div>
-        <h2>1. 上传主画面</h2>
+        <h2>1. 上传主画面背景</h2>
         <div class="field">
           <label for="masterInput">主画面图片</label>
           <input id="masterInput" type="file" accept="image/*">
-          <div class="hint">主画面可以包含文字、icon、人物或背景。工具会按目标尺寸裁切/留白，尽量保留主体内容。</div>
+          <div class="hint">主画面可以包含文字、icon、logo 等元素；工具会分析这些内容块，并按 demo 的版式重新摆放。主画面用于生成背景，不再只是按尺寸硬裁切；文字和 logo 会作为独立图层重新排版。</div>
         </div>
         <div class="field">
-          <label for="fitMode">默认生成方式</label>
+          <label for="fitMode">背景处理方式</label>
           <select id="fitMode">
-            <option value="cover">铺满裁切：适合视觉入口图</option>
-            <option value="contain">完整留白：适合必须保留全部文字</option>
+            <option value="cover">铺满裁切背景</option>
+            <option value="contain">完整保留背景并留白</option>
+            <option value="blur">模糊铺底 + 完整主体</option>
           </select>
-          <div class="hint">默认按配置尺寸输出，主画面等比裁切铺满主画面区域；demo 默认仅作为半透明参考层预览。</div>
         </div>
       </div>
-      <div class="preview-box" id="masterPreview">
-        <span class="hint">主画面预览会显示在这里</span>
+      <div>
+        <div class="preview-box" id="masterPreview"><span class="hint">主画面预览会显示在这里</span></div>
+        <div id="masterAnalysis" class="layout-note">主画面分析结果会显示在这里。</div>
       </div>
     </section>
-
     <section class="panel">
-      <h2>2. 配置入口图尺寸</h2>
-      <p class="hint">可以新增任意尺寸。请为 demo 明确选择用途，并手动填写主画面区域 X/Y/宽/高、圆角、留白等可解释参数，避免完全依赖图片自动识别。</p>
+      <h2>2. 设置可重排内容图层</h2>
+      <p class="hint">默认会从主图中自动找出类似文字、logo、角标的视觉块，并按每个尺寸 demo 的布局重新摆放；如果主图识别不准确，也可以切换为手动输入文案图层。</p>
+      <div class="fields-2">
+        <div class="field"><label for="sourceMode">内容来源</label><select id="sourceMode"><option value="extract">从主图自动提取图层（推荐）</option><option value="manual">使用下面手动文案 / logo 图层</option></select></div>
+        <div class="field"><label>提取说明</label><div class="layout-note">自动提取会保留主图里原本的文字/icon外观，再根据 demo 的位置、大小进行缩放和重排；不会 OCR 修改文字内容。</div></div>
+      </div>
+      <p class="hint">浏览器不能可靠 OCR 任意图片里的文字，因此这里把文字、logo、角标作为可编辑图层；生成时会根据各尺寸 demo 识别到的位置、大小和比例重新绘制。</p>
+      <div class="fields-3">
+        <div class="field"><label for="titleText">主标题</label><textarea id="titleText" placeholder="例如：夏日新品限时购">夏日新品限时购</textarea></div>
+        <div class="field"><label for="subtitleText">副标题 / 卖点</label><textarea id="subtitleText" placeholder="例如：爆款直降 30%">爆款直降 30%</textarea></div>
+        <div class="field"><label for="badgeText">角标 / CTA</label><input id="badgeText" type="text" value="立即查看"></div>
+      </div>
+      <div class="fields-4">
+        <div class="field"><label for="logoInput">logo / icon 图片</label><input id="logoInput" type="file" accept="image/*"><span class="hint">不上传则使用文字 logo 占位。</span></div>
+        <div class="field"><label for="brandText">文字 logo 占位</label><input id="brandText" type="text" value="LOGO"></div>
+        <div class="field"><label for="textColor">文字颜色</label><input id="textColor" type="color" value="#ffffff"></div>
+        <div class="field"><label for="accentColor">强调色 / 按钮色</label><input id="accentColor" type="color" value="#ffcf33"></div>
+      </div>
+      <div class="fields-4">
+        <div class="field"><label for="fontFamily">字体</label><input id="fontFamily" type="text" value="Arial, Microsoft YaHei, sans-serif"></div>
+        <div class="field"><label for="shadowStrength">文字阴影强度</label><input id="shadowStrength" type="number" min="0" max="100" step="5" value="45"></div>
+        <div class="field"><label for="scrimStrength">文字区域暗底强度</label><input id="scrimStrength" type="number" min="0" max="100" step="5" value="35"></div>
+        <div class="field"><label for="layoutMode">demo 使用方式</label><select id="layoutMode"><option value="auto">自动识别 demo 布局</option><option value="default">忽略 demo，用默认安全布局</option></select></div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>3. 配置入口图尺寸和 demo</h2>
+      <p class="hint">每个尺寸可上传 demo。工具会在 demo 中寻找高对比内容块，推断 logo、主标题、副标题、角标的大致区域，然后把上面的内容图层重绘到对应位置。</p>
       <div class="toolbar" style="margin: 16px 0 18px;">
         <button id="addSizeBtn" type="button">新增尺寸</button>
         <button id="selectAllBtn" type="button" class="secondary">全选</button>
         <button id="clearAllBtn" type="button" class="ghost">取消全选</button>
         <button id="resetBtn" type="button" class="danger">恢复默认尺寸</button>
       </div>
-      <div id="sizeList" class="size-list"></div>
+      <div id="sizeList" class="size-list"><article class="size-card">
+      <div class="size-head"><label class="size-title"><input class="enabled" type="checkbox"><span class="titleText">方形入口 300x300 · 300×300</span></label><button class="danger remove" type="button">删除</button></div>
+      <div class="size-fields">
+        <div class="field"><label>名称</label><input class="name" type="text" placeholder="例如 首页 Banner"></div>
+        <div class="field"><label>宽度(px)</label><input class="width" type="number" min="1" step="1"></div>
+        <div class="field"><label>高度(px)</label><input class="height" type="number" min="1" step="1"></div>
+        <div class="field"><label>demo 图</label><input class="demo" type="file" accept="image/*"><div class="layout-note demoNote">未选择 demo，将使用默认布局。</div></div>
+      </div>
+      <div class="advanced">
+        <div class="field"><label>整体留边(%)</label><input class="padding" type="number" min="0" max="30" step="1"></div>
+        <div class="field"><label>内容偏移 X(%)</label><input class="focusX" type="number" min="0" max="100" step="1"></div>
+        <div class="field"><label>内容偏移 Y(%)</label><input class="focusY" type="number" min="0" max="100" step="1"></div>
+        <div class="field"><label>背景色</label><input class="background" type="text" placeholder="#ffffff 或 transparent"></div>
+        <div class="field"><label>背景方式</label><select class="mode"><option value="auto">跟随默认</option><option value="cover">铺满裁切背景</option><option value="contain">完整保留背景</option><option value="blur">模糊铺底 + 完整主体</option></select></div>
+      </div>
+      <div class="layout-note analysisNote">demo 分析结果会显示在这里。</div>
+    </article><article class="size-card">
+      <div class="size-head"><label class="size-title"><input class="enabled" type="checkbox"><span class="titleText">横版 Banner 640x360 · 640×360</span></label><button class="danger remove" type="button">删除</button></div>
+      <div class="size-fields">
+        <div class="field"><label>名称</label><input class="name" type="text" placeholder="例如 首页 Banner"></div>
+        <div class="field"><label>宽度(px)</label><input class="width" type="number" min="1" step="1"></div>
+        <div class="field"><label>高度(px)</label><input class="height" type="number" min="1" step="1"></div>
+        <div class="field"><label>demo 图</label><input class="demo" type="file" accept="image/*"><div class="layout-note demoNote">未选择 demo，将使用默认布局。</div></div>
+      </div>
+      <div class="advanced">
+        <div class="field"><label>整体留边(%)</label><input class="padding" type="number" min="0" max="30" step="1"></div>
+        <div class="field"><label>内容偏移 X(%)</label><input class="focusX" type="number" min="0" max="100" step="1"></div>
+        <div class="field"><label>内容偏移 Y(%)</label><input class="focusY" type="number" min="0" max="100" step="1"></div>
+        <div class="field"><label>背景色</label><input class="background" type="text" placeholder="#ffffff 或 transparent"></div>
+        <div class="field"><label>背景方式</label><select class="mode"><option value="auto">跟随默认</option><option value="cover">铺满裁切背景</option><option value="contain">完整保留背景</option><option value="blur">模糊铺底 + 完整主体</option></select></div>
+      </div>
+      <div class="layout-note analysisNote">demo 分析结果会显示在这里。</div>
+    </article><article class="size-card">
+      <div class="size-head"><label class="size-title"><input class="enabled" type="checkbox"><span class="titleText">运营入口 750x420 · 750×420</span></label><button class="danger remove" type="button">删除</button></div>
+      <div class="size-fields">
+        <div class="field"><label>名称</label><input class="name" type="text" placeholder="例如 首页 Banner"></div>
+        <div class="field"><label>宽度(px)</label><input class="width" type="number" min="1" step="1"></div>
+        <div class="field"><label>高度(px)</label><input class="height" type="number" min="1" step="1"></div>
+        <div class="field"><label>demo 图</label><input class="demo" type="file" accept="image/*"><div class="layout-note demoNote">未选择 demo，将使用默认布局。</div></div>
+      </div>
+      <div class="advanced">
+        <div class="field"><label>整体留边(%)</label><input class="padding" type="number" min="0" max="30" step="1"></div>
+        <div class="field"><label>内容偏移 X(%)</label><input class="focusX" type="number" min="0" max="100" step="1"></div>
+        <div class="field"><label>内容偏移 Y(%)</label><input class="focusY" type="number" min="0" max="100" step="1"></div>
+        <div class="field"><label>背景色</label><input class="background" type="text" placeholder="#ffffff 或 transparent"></div>
+        <div class="field"><label>背景方式</label><select class="mode"><option value="auto">跟随默认</option><option value="cover">铺满裁切背景</option><option value="contain">完整保留背景</option><option value="blur">模糊铺底 + 完整主体</option></select></div>
+      </div>
+      <div class="layout-note analysisNote">demo 分析结果会显示在这里。</div>
+    </article><article class="size-card">
+      <div class="size-head"><label class="size-title"><input class="enabled" type="checkbox"><span class="titleText">竖版海报 1080x1920 · 1080×1920</span></label><button class="danger remove" type="button">删除</button></div>
+      <div class="size-fields">
+        <div class="field"><label>名称</label><input class="name" type="text" placeholder="例如 首页 Banner"></div>
+        <div class="field"><label>宽度(px)</label><input class="width" type="number" min="1" step="1"></div>
+        <div class="field"><label>高度(px)</label><input class="height" type="number" min="1" step="1"></div>
+        <div class="field"><label>demo 图</label><input class="demo" type="file" accept="image/*"><div class="layout-note demoNote">未选择 demo，将使用默认布局。</div></div>
+      </div>
+      <div class="advanced">
+        <div class="field"><label>整体留边(%)</label><input class="padding" type="number" min="0" max="30" step="1"></div>
+        <div class="field"><label>内容偏移 X(%)</label><input class="focusX" type="number" min="0" max="100" step="1"></div>
+        <div class="field"><label>内容偏移 Y(%)</label><input class="focusY" type="number" min="0" max="100" step="1"></div>
+        <div class="field"><label>背景色</label><input class="background" type="text" placeholder="#ffffff 或 transparent"></div>
+        <div class="field"><label>背景方式</label><select class="mode"><option value="auto">跟随默认</option><option value="cover">铺满裁切背景</option><option value="contain">完整保留背景</option><option value="blur">模糊铺底 + 完整主体</option></select></div>
+      </div>
+      <div class="layout-note analysisNote">demo 分析结果会显示在这里。</div>
+    </article></div>
     </section>
-
     <section class="panel">
-      <h2>3. 生成与下载</h2>
+      <h2>4. 生成与下载</h2>
       <div class="toolbar">
-        <button id="generateBtn" type="button">生成勾选尺寸</button>
-        <button id="downloadAllBtn" type="button" class="secondary" disabled>全部逐个下载</button>
+        <button id="generateBtn" type="button">按主图内容 + demo 布局生成</button>
+        <button id="downloadAllBtn" type="button" class="secondary" disabled="">全部逐个下载</button>
       </div>
       <div id="status" class="status" role="status"></div>
     </section>
-
-    <section class="panel">
-      <h2>生成结果</h2>
-      <div id="resultGrid" class="result-grid">
-        <div class="empty">还没有生成图片。上传主画面并点击“生成勾选尺寸”。</div>
-      </div>
-    </section>
-
+    <section class="panel"><h2>生成结果</h2><div id="resultGrid" class="result-grid"><div class="empty">还没有生成图片。上传主画面并点击"按主图内容 + demo 布局生成"。</div></div></section>
     <section class="panel">
       <h2>生成规则说明</h2>
       <div class="rules">
-        <div class="rule-card">
-          <strong>尺寸可新增</strong>
-          <span class="hint">名称、宽度、高度、是否勾选都会保存到浏览器本地，下次打开自动恢复。</span>
-        </div>
-        <div class="rule-card">
-          <strong>demo 可选</strong>
-          <span class="hint">每个尺寸可上传一张 demo，并选择“构图参考 / 背景模板 / 标记图”。默认只作为半透明参考层预览，不写入最终图。</span>
-        </div>
-        <div class="rule-card">
-          <strong>参数可微调</strong>
-          <span class="hint">主画面区域 X/Y/宽/高、圆角、留白和安全区百分比共同决定最终绘制位置，参数都可手动微调。</span>
-        </div>
+        <div class="rule-card"><strong>重新生成，不只是裁切</strong><span class="hint">主图里的文字、logo、icon 会被识别为可搬运视觉块；必要时也可切换手动文案模式。</span></div>
+        <div class="rule-card"><strong>demo 提供布局提示</strong><span class="hint">工具会分析 demo 的高对比区域，推断文字和 logo 大概排在哪里、应该占多大。</span></div>
+        <div class="rule-card"><strong>尺寸可以持续新增</strong><span class="hint">每个尺寸的宽高、策略和微调参数都会保存到浏览器本地。</span></div>
       </div>
     </section>
   </main>
-
-  <template id="sizeTemplate">
-    <article class="size-card">
-      <div class="size-head">
-        <label class="size-title">
-          <input class="enabled" type="checkbox">
-          <span class="titleText">入口图尺寸</span>
-        </label>
-        <button class="danger remove" type="button">删除</button>
-      </div>
-      <div class="size-fields">
-        <div class="field">
-          <label>名称</label>
-          <input class="name" type="text" placeholder="例如 首页 Banner">
-        </div>
-        <div class="field">
-          <label>宽度(px)</label>
-          <input class="width" type="number" min="1" step="1">
-        </div>
-        <div class="field">
-          <label>高度(px)</label>
-          <input class="height" type="number" min="1" step="1">
-        </div>
-        <div class="field">
-          <label>demo 图</label>
-          <input class="demo" type="file" accept="image/*">
-          <div class="mini-preview">已选择 demo</div>
-        </div>
-      </div>
-      <div class="area-settings">
-        <div class="area-title">主画面区域设置</div>
-        <div class="area-grid">
-          <div class="field">
-            <label>主画面 X(px)</label>
-            <input class="mainX" type="number" min="0" step="1">
-          </div>
-          <div class="field">
-            <label>主画面 Y(px)</label>
-            <input class="mainY" type="number" min="0" step="1">
-          </div>
-          <div class="field">
-            <label>主画面宽(px)</label>
-            <input class="mainWidth" type="number" min="1" step="1">
-          </div>
-          <div class="field">
-            <label>主画面高(px)</label>
-            <input class="mainHeight" type="number" min="1" step="1">
-          </div>
-          <div class="field">
-            <label>圆角(px)</label>
-            <input class="cornerRadius" type="number" min="0" step="1">
-          </div>
-          <div class="field">
-            <label>留白(px)</label>
-            <input class="padding" type="number" min="0" step="1">
-          </div>
-        </div>
-        <div class="hint">模板图模式会先绘制 demo，再把主画面绘制到该区域；参考/标记模式只在预览显示半透明 demo，不参与最终输出。</div>
-      </div>
-      <div class="advanced">
-        <div class="field">
-          <label>安全区 X(%)</label>
-          <input class="focusX" type="number" min="0" max="100" step="1">
-        </div>
-        <div class="field">
-          <label>安全区 Y(%)</label>
-          <input class="focusY" type="number" min="0" max="100" step="1">
-        </div>
-        <div class="field">
-          <label>背景色</label>
-          <input class="background" type="text" placeholder="#ffffff 或 transparent">
-        </div>
-        <div class="field">
-          <label>该尺寸方式</label>
-          <select class="mode">
-            <option value="auto">跟随默认</option>
-            <option value="cover">铺满裁切</option>
-            <option value="contain">完整留白</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>demo 用途</label>
-          <select class="demoRole">
-            <option value="reference">构图参考：仅预览参考层</option>
-            <option value="template">背景/边框模板：写入最终图</option>
-            <option value="marker">文字/icon/安全区标记：仅预览</option>
-          </select>
-        </div>
-      </div>
-    </article>
-  </template>
-
+  <template id="sizeTemplate"></template>
   <script>
-    const STORAGE_KEY = 'entry-image-tool-size-configs-v2';
-    const LEGACY_STORAGE_KEY = 'entry-image-tool-size-configs-v1';
+    // 版本标识 - 使用 v3 版本
+    const STORAGE_KEY = 'entry-image-tool-size-configs-v3';
+
+    // 默认尺寸配置
     const DEFAULT_SIZES = [
-      createDefaultSize('方形入口 300x300', 300, 300, true),
-      createDefaultSize('横版 Banner 640x360', 640, 360, true),
-      createDefaultSize('运营入口 750x420', 750, 420, true),
-      createDefaultSize('竖版海报 1080x1920', 1080, 1920, false)
+      { id: makeId(), name: '方形入口 300x300', width: 300, height: 300, enabled: true, focusX: 50, focusY: 50, padding: 8, background: '#101828', mode: 'auto' },
+      { id: makeId(), name: '横版 Banner 640x360', width: 640, height: 360, enabled: true, focusX: 50, focusY: 50, padding: 7, background: '#101828', mode: 'auto' },
+      { id: makeId(), name: '运营入口 750x420', width: 750, height: 420, enabled: true, focusX: 50, focusY: 50, padding: 7, background: '#101828', mode: 'auto' },
+      { id: makeId(), name: '竖版海报 1080x1920', width: 1080, height: 1920, enabled: false, focusX: 50, focusY: 50, padding: 9, background: '#101828', mode: 'auto' }
     ];
 
-    const state = {
-      masterImage: null,
-      masterName: 'entry-image',
-      sizes: loadSizes(),
-      demoImages: new Map(),
-      results: []
+    // 应用状态 - v3 版本包含 masterLayout 字段
+    const state = { masterImage: null, logoImage: null, masterName: 'entry-image', masterLayout: null, sizes: loadSizes(), demoImages: new Map(), demoLayouts: new Map(), results: [] };
+
+    // DOM 选择器辅助函数
+    const $ = (selector) => document.querySelector(selector);
+
+    // 控件引用 - v3 版本包含 masterAnalysis
+    const controls = {
+      masterInput: $('#masterInput'),
+      logoInput: $('#logoInput'),
+      masterPreview: $('#masterPreview'),
+      masterAnalysis: $('#masterAnalysis'),
+      fitMode: $('#fitMode'),
+      sizeList: $('#sizeList'),
+      template: $('#sizeTemplate'),
+      resultGrid: $('#resultGrid'),
+      statusBox: $('#status'),
+      downloadAllBtn: $('#downloadAllBtn'),
+      sourceMode: $('#sourceMode'),
+      titleText: $('#titleText'),
+      subtitleText: $('#subtitleText'),
+      badgeText: $('#badgeText'),
+      brandText: $('#brandText'),
+      textColor: $('#textColor'),
+      accentColor: $('#accentColor'),
+      fontFamily: $('#fontFamily'),
+      shadowStrength: $('#shadowStrength'),
+      scrimStrength: $('#scrimStrength'),
+      layoutMode: $('#layoutMode')
     };
 
-    const masterInput = document.querySelector('#masterInput');
-    const masterPreview = document.querySelector('#masterPreview');
-    const fitMode = document.querySelector('#fitMode');
-    const sizeList = document.querySelector('#sizeList');
-    const template = document.querySelector('#sizeTemplate');
-    const resultGrid = document.querySelector('#resultGrid');
-    const statusBox = document.querySelector('#status');
-    const downloadAllBtn = document.querySelector('#downloadAllBtn');
-
-    masterInput.addEventListener('change', async (event) => {
+    // 主画面上传处理
+    controls.masterInput.addEventListener('change', async (event) => {
       const file = event.target.files[0];
       if (!file) return;
       try {
         state.masterImage = await loadImage(file);
         state.masterName = file.name.replace(/\.[^.]+$/, '') || 'entry-image';
-        masterPreview.innerHTML = '';
+        state.masterLayout = analyzeVisualLayout(state.masterImage, { width: state.masterImage.naturalWidth, height: state.masterImage.naturalHeight, padding: 5 }, 'master');
+        controls.masterPreview.innerHTML = '';
         const image = document.createElement('img');
         image.src = URL.createObjectURL(file);
         image.alt = '主画面预览';
-        masterPreview.appendChild(image);
-        showStatus(`已读取主画面：${state.masterImage.naturalWidth} × ${state.masterImage.naturalHeight}`, 'success');
+        controls.masterPreview.appendChild(image);
+        controls.masterAnalysis.innerHTML = state.masterLayout.summary;
+        showStatus(`已读取并分析主画面：${state.masterImage.naturalWidth} × ${state.masterImage.naturalHeight}，识别到 ${state.masterLayout.detectedCount} 个内容块。`, 'success');
       } catch (error) {
         showStatus(`主画面读取失败：${error.message}`, 'error');
       }
     });
 
-    document.querySelector('#addSizeBtn').addEventListener('click', () => {
-      state.sizes.push(createDefaultSize('新入口图尺寸', 800, 450, true));
+    // Logo 上传处理
+    controls.logoInput.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        state.logoImage = await loadImage(file);
+        showStatus(`已读取 logo：${state.logoImage.naturalWidth} × ${state.logoImage.naturalHeight}`, 'success');
+      } catch (error) {
+        showStatus(`logo 读取失败：${error.message}`, 'error');
+      }
+    });
+
+    // 尺寸操作按钮事件
+    $('#addSizeBtn').addEventListener('click', () => {
+      state.sizes.push({ id: makeId(), name: '新入口图尺寸', width: 800, height: 450, enabled: true, focusX: 50, focusY: 50, padding: 8, background: '#101828', mode: 'auto' });
       saveSizes();
       renderSizes();
     });
-
-    document.querySelector('#selectAllBtn').addEventListener('click', () => {
-      state.sizes.forEach((size) => size.enabled = true);
-      saveSizes();
-      renderSizes();
-    });
-
-    document.querySelector('#clearAllBtn').addEventListener('click', () => {
-      state.sizes.forEach((size) => size.enabled = false);
-      saveSizes();
-      renderSizes();
-    });
-
-    document.querySelector('#resetBtn').addEventListener('click', () => {
+    $('#selectAllBtn').addEventListener('click', () => { state.sizes.forEach((size) => size.enabled = true); saveSizes(); renderSizes(); });
+    $('#clearAllBtn').addEventListener('click', () => { state.sizes.forEach((size) => size.enabled = false); saveSizes(); renderSizes(); });
+    $('#resetBtn').addEventListener('click', () => {
       if (!confirm('确定恢复默认尺寸？这会清空当前自定义尺寸配置。')) return;
-      state.sizes = DEFAULT_SIZES.map((size) => ({ ...size, id: crypto.randomUUID() }));
+      state.sizes = DEFAULT_SIZES.map((size) => ({ ...size, id: makeId() }));
       state.demoImages.clear();
+      state.demoLayouts.clear();
       saveSizes();
       renderSizes();
       showStatus('已恢复默认尺寸。', 'success');
     });
 
-    document.querySelector('#generateBtn').addEventListener('click', generateImages);
-    downloadAllBtn.addEventListener('click', () => {
-      state.results.forEach((result, index) => {
-        setTimeout(() => downloadDataUrl(result.url, result.fileName), index * 180);
-      });
-    });
+    // 生成和下载按钮事件
+    $('#generateBtn').addEventListener('click', generateImages);
+    controls.downloadAllBtn.addEventListener('click', () => state.results.forEach((result, index) => setTimeout(() => downloadDataUrl(result.url, result.fileName), index * 180)));
 
+    // 初始渲染
     renderSizes();
 
-    function createDefaultSize(name, width, height, enabled = true) {
-      return {
-        id: crypto.randomUUID(),
-        name,
-        width,
-        height,
-        enabled,
-        mainX: 0,
-        mainY: 0,
-        mainWidth: width,
-        mainHeight: height,
-        cornerRadius: 0,
-        padding: 0,
-        focusX: 50,
-        focusY: 50,
-        background: '#ffffff',
-        mode: 'auto',
-        demoRole: 'reference'
-      };
-    }
-
+    // 加载尺寸配置
     function loadSizes() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
-        if (!raw) return DEFAULT_SIZES.map((size) => ({ ...size, id: crypto.randomUUID() }));
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('entry-image-tool-size-configs-v2');
+        if (!raw) return DEFAULT_SIZES.map((size) => ({ ...size, id: makeId() }));
         const parsed = JSON.parse(raw);
         if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('empty config');
         return parsed.map(normalizeSize);
       } catch {
-        return DEFAULT_SIZES.map((size) => ({ ...size, id: crypto.randomUUID() }));
+        return DEFAULT_SIZES.map((size) => ({ ...size, id: makeId() }));
       }
     }
 
+    // 标准化尺寸配置
     function normalizeSize(size) {
       const width = Math.max(1, Number(size.width) || 300);
       const height = Math.max(1, Number(size.height) || 300);
       return {
-        id: size.id || crypto.randomUUID(),
+        id: size.id || makeId(),
         name: String(size.name || '入口图尺寸'),
         width,
         height,
@@ -691,135 +362,120 @@
         padding: Math.max(0, Number(size.padding) || 0),
         focusX: clamp(Number(size.focusX) || 50, 0, 100),
         focusY: clamp(Number(size.focusY) || 50, 0, 100),
-        background: String(size.background || '#ffffff'),
-        mode: ['auto', 'cover', 'contain'].includes(size.mode) ? size.mode : 'auto',
-        demoRole: ['reference', 'template', 'marker'].includes(size.demoRole) ? size.demoRole : 'reference'
+        padding: clamp(Number(size.padding) || 8, 0, 30),
+        background: String(size.background || '#101828'),
+        mode: ['auto', 'cover', 'contain', 'blur'].includes(size.mode) ? size.mode : 'auto'
       };
     }
 
-    function saveSizes() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.sizes));
-    }
+    // 保存尺寸配置
+    function saveSizes() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.sizes)); }
 
+    // 渲染尺寸列表
     function renderSizes() {
-      sizeList.innerHTML = '';
+      controls.sizeList.innerHTML = '';
       state.sizes.forEach((size) => {
-        const item = template.content.firstElementChild.cloneNode(true);
-        const enabled = item.querySelector('.enabled');
-        const titleText = item.querySelector('.titleText');
-        const name = item.querySelector('.name');
-        const width = item.querySelector('.width');
-        const height = item.querySelector('.height');
-        const demo = item.querySelector('.demo');
-        const miniPreview = item.querySelector('.mini-preview');
-        const mainX = item.querySelector('.mainX');
-        const mainY = item.querySelector('.mainY');
-        const mainWidth = item.querySelector('.mainWidth');
-        const mainHeight = item.querySelector('.mainHeight');
-        const cornerRadius = item.querySelector('.cornerRadius');
-        const padding = item.querySelector('.padding');
-        const focusX = item.querySelector('.focusX');
-        const focusY = item.querySelector('.focusY');
-        const background = item.querySelector('.background');
-        const mode = item.querySelector('.mode');
-        const demoRole = item.querySelector('.demoRole');
+        const item = controls.template.content.firstElementChild.cloneNode(true);
+        const refs = {
+          enabled: item.querySelector('.enabled'),
+          titleText: item.querySelector('.titleText'),
+          name: item.querySelector('.name'),
+          width: item.querySelector('.width'),
+          height: item.querySelector('.height'),
+          demo: item.querySelector('.demo'),
+          demoNote: item.querySelector('.demoNote'),
+          analysisNote: item.querySelector('.analysisNote'),
+          padding: item.querySelector('.padding'),
+          focusX: item.querySelector('.focusX'),
+          focusY: item.querySelector('.focusY'),
+          background: item.querySelector('.background'),
+          mode: item.querySelector('.mode')
+        };
+        refs.titleText.textContent = `${size.name} · ${size.width}×${size.height}`;
+        refs.enabled.checked = size.enabled;
+        refs.name.value = size.name;
+        refs.width.value = size.width;
+        refs.height.value = size.height;
+        refs.padding.value = size.padding;
+        refs.focusX.value = size.focusX;
+        refs.focusY.value = size.focusY;
+        refs.background.value = size.background;
+        refs.mode.value = size.mode;
 
-        titleText.textContent = `${size.name} · ${size.width}×${size.height}`;
-        enabled.checked = size.enabled;
-        name.value = size.name;
-        width.value = size.width;
-        height.value = size.height;
-        mainX.value = size.mainX;
-        mainY.value = size.mainY;
-        mainWidth.value = size.mainWidth;
-        mainHeight.value = size.mainHeight;
-        cornerRadius.value = size.cornerRadius;
-        padding.value = size.padding;
-        focusX.value = size.focusX;
-        focusY.value = size.focusY;
-        background.value = size.background;
-        mode.value = size.mode;
-        demoRole.value = size.demoRole;
-        miniPreview.classList.toggle('show', state.demoImages.has(size.id));
+        const layout = state.demoLayouts.get(size.id);
+        refs.demoNote.textContent = state.demoImages.has(size.id) ? '已选择 demo，将按 demo 布局重排。' : '未选择 demo，将使用默认布局。';
+        refs.analysisNote.innerHTML = layout ? layout.summary : 'demo 分析结果会显示在这里。';
 
-        enabled.addEventListener('change', () => updateSize(size.id, { enabled: enabled.checked }));
-        name.addEventListener('input', () => updateSize(size.id, { name: name.value }, false));
-        width.addEventListener('input', () => updateSize(size.id, { width: Number(width.value) }, false));
-        height.addEventListener('input', () => updateSize(size.id, { height: Number(height.value) }, false));
-        mainX.addEventListener('input', () => updateSize(size.id, { mainX: Number(mainX.value) }, false));
-        mainY.addEventListener('input', () => updateSize(size.id, { mainY: Number(mainY.value) }, false));
-        mainWidth.addEventListener('input', () => updateSize(size.id, { mainWidth: Number(mainWidth.value) }, false));
-        mainHeight.addEventListener('input', () => updateSize(size.id, { mainHeight: Number(mainHeight.value) }, false));
-        cornerRadius.addEventListener('input', () => updateSize(size.id, { cornerRadius: Number(cornerRadius.value) }, false));
-        padding.addEventListener('input', () => updateSize(size.id, { padding: Number(padding.value) }, false));
-        focusX.addEventListener('input', () => updateSize(size.id, { focusX: clamp(Number(focusX.value), 0, 100) }, false));
-        focusY.addEventListener('input', () => updateSize(size.id, { focusY: clamp(Number(focusY.value), 0, 100) }, false));
-        background.addEventListener('input', () => updateSize(size.id, { background: background.value }, false));
-        mode.addEventListener('change', () => updateSize(size.id, { mode: mode.value }));
-        demoRole.addEventListener('change', () => updateSize(size.id, { demoRole: demoRole.value }));
-        demo.addEventListener('change', async (event) => {
+        refs.enabled.addEventListener('change', () => updateSize(size.id, { enabled: refs.enabled.checked }));
+        refs.name.addEventListener('input', () => updateSize(size.id, { name: refs.name.value }, false));
+        refs.width.addEventListener('input', () => updateSize(size.id, { width: Number(refs.width.value) }, false));
+        refs.height.addEventListener('input', () => updateSize(size.id, { height: Number(refs.height.value) }, false));
+        refs.padding.addEventListener('input', () => updateSize(size.id, { padding: Number(refs.padding.value) }, false));
+        refs.focusX.addEventListener('input', () => updateSize(size.id, { focusX: Number(refs.focusX.value) }, false));
+        refs.focusY.addEventListener('input', () => updateSize(size.id, { focusY: Number(refs.focusY.value) }, false));
+        refs.background.addEventListener('input', () => updateSize(size.id, { background: refs.background.value }, false));
+        refs.mode.addEventListener('change', () => updateSize(size.id, { mode: refs.mode.value }));
+
+        refs.demo.addEventListener('change', async (event) => {
           const file = event.target.files[0];
           if (!file) return;
           try {
             const image = await loadImage(file);
             state.demoImages.set(size.id, image);
-            miniPreview.textContent = `已选择 demo：${image.naturalWidth} × ${image.naturalHeight}`;
-            miniPreview.classList.add('show');
-            showStatus(`${size.name} 的 demo 已读取。`, 'success');
+            const analyzed = analyzeVisualLayout(image, size, 'demo');
+            state.demoLayouts.set(size.id, analyzed);
+            refs.demoNote.textContent = `已选择 demo：${image.naturalWidth} × ${image.naturalHeight}`;
+            refs.analysisNote.innerHTML = analyzed.summary;
+            showStatus(`${size.name} 的 demo 已分析：${analyzed.detectedCount} 个布局块。`, 'success');
           } catch (error) {
             showStatus(`demo 读取失败：${error.message}`, 'error');
           }
         });
+
         item.querySelector('.remove').addEventListener('click', () => {
           state.sizes = state.sizes.filter((entry) => entry.id !== size.id);
           state.demoImages.delete(size.id);
+          state.demoLayouts.delete(size.id);
           saveSizes();
           renderSizes();
         });
-        sizeList.appendChild(item);
+        controls.sizeList.appendChild(item);
       });
     }
 
+    // 更新尺寸配置
     function updateSize(id, patch, rerender = true) {
       const size = state.sizes.find((entry) => entry.id === id);
       if (!size) return;
       Object.assign(size, patch);
       size.width = Math.max(1, Number(size.width) || 1);
       size.height = Math.max(1, Number(size.height) || 1);
-      size.mainX = clamp(Number(size.mainX) || 0, 0, size.width);
-      size.mainY = clamp(Number(size.mainY) || 0, 0, size.height);
-      size.mainWidth = Math.max(1, Number(size.mainWidth) || size.width);
-      size.mainHeight = Math.max(1, Number(size.mainHeight) || size.height);
-      size.cornerRadius = Math.max(0, Number(size.cornerRadius) || 0);
-      size.padding = Math.max(0, Number(size.padding) || 0);
+      size.padding = clamp(Number(size.padding) || 8, 0, 30);
       size.focusX = clamp(Number(size.focusX) || 50, 0, 100);
       size.focusY = clamp(Number(size.focusY) || 50, 0, 100);
       saveSizes();
       if (rerender) renderSizes();
     }
 
-    async function generateImages() {
-      if (!state.masterImage) {
-        showStatus('请先上传主画面。', 'error');
-        return;
-      }
-
+    // 生成图片主函数
+    function generateImages() {
+      if (!state.masterImage) { showStatus('请先上传主画面。', 'error'); return; }
       const targets = state.sizes.filter((size) => size.enabled);
-      if (targets.length === 0) {
-        showStatus('请至少勾选一个入口图尺寸。', 'error');
-        return;
-      }
-
+      if (targets.length === 0) { showStatus('请至少勾选一个入口图尺寸。', 'error'); return; }
       try {
+        if (controls.sourceMode.value === 'extract' && !state.masterLayout) {
+          state.masterLayout = analyzeVisualLayout(state.masterImage, { width: state.masterImage.naturalWidth, height: state.masterImage.naturalHeight, padding: 5 }, 'master');
+        }
         state.results = targets.map((size) => renderImageForSize(size));
         renderResults();
-        downloadAllBtn.disabled = state.results.length === 0;
-        showStatus(`已生成 ${state.results.length} 张入口图。`, 'success');
+        controls.downloadAllBtn.disabled = state.results.length === 0;
+        showStatus(`已按"${controls.sourceMode.value === 'extract' ? '主图提取图层' : '手动文案图层'} + demo 布局"生成 ${state.results.length} 张入口图。`, 'success');
       } catch (error) {
         showStatus(`生成失败：${error.message}`, 'error');
       }
     }
 
+    // 为单个尺寸渲染图片
     function renderImageForSize(size) {
       const finalCanvas = renderCanvasForSize(size, false);
       const previewCanvas = renderCanvasForSize(size, true);
@@ -841,105 +497,422 @@
       canvas.width = size.width;
       canvas.height = size.height;
       const context = canvas.getContext('2d');
-      const background = size.background.trim() || '#ffffff';
-      const demo = state.demoImages.get(size.id);
+      const background = size.background.trim() || '#101828';
 
       if (background !== 'transparent') {
         context.fillStyle = background;
         context.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      if (demo && size.demoRole === 'template') {
-        context.drawImage(demo, 0, 0, canvas.width, canvas.height);
+      const layout = controls.layoutMode.value === 'auto' ? (state.demoLayouts.get(size.id) || defaultLayout(size)) : defaultLayout(size);
+
+      if (controls.sourceMode.value === 'extract') {
+        // 自动提取模式：使用主图内容 + demo 布局
+        drawGeneratedBackground(context, size, canvas.width, canvas.height);
+        drawTextScrim(context, layout.textGroup, Number(controls.scrimStrength.value) / 100 * .8);
+        drawExtractedLayers(context, state.masterLayout || defaultLayout(size), layout, size);
+      } else {
+        // 手动文案模式
+        drawBackground(context, size, canvas.width, canvas.height);
+        drawTextScrim(context, layout.textGroup, Number(controls.scrimStrength.value) / 100);
+        drawLogo(context, layout.logo, size);
+        drawTextLayer(context, controls.titleText.value, layout.title, size, 1, 900);
+        drawTextLayer(context, controls.subtitleText.value, layout.subtitle, size, .58, 700);
+        drawBadge(context, controls.badgeText.value, layout.badge, size);
       }
 
-      drawMasterImage(context, size);
-
-      if (includeReferenceOverlay && demo && size.demoRole !== 'template') {
-        context.save();
-        context.globalAlpha = 0.35;
-        context.drawImage(demo, 0, 0, canvas.width, canvas.height);
-        context.restore();
-      }
-
-      return canvas;
+      const url = canvas.toDataURL('image/png');
+      return { url, name: size.name, width: size.width, height: size.height, fileName: `${safeFileName(state.masterName)}-${safeFileName(size.name)}-${size.width}x${size.height}.png` };
     }
 
-    function drawMasterImage(context, size) {
-      const area = getMainArea(size);
-      const mode = size.mode === 'auto' ? fitMode.value : size.mode;
-      const draw = mode === 'contain'
-        ? getContainRect(state.masterImage, area.width, area.height)
-        : getCoverRect(state.masterImage, area.width, area.height, size.focusX / 100, size.focusY / 100);
-
+    // 绘制模糊背景
+    function drawGeneratedBackground(context, size, width, height) {
+      const cover = getCoverRect(state.masterImage, width, height, size.focusX / 100, size.focusY / 100);
       context.save();
-      roundedRectPath(context, area.x, area.y, area.width, area.height, area.radius);
-      context.clip();
-      context.drawImage(
-        state.masterImage,
-        draw.sx,
-        draw.sy,
-        draw.sw,
-        draw.sh,
-        area.x + draw.dx,
-        area.y + draw.dy,
-        draw.dw,
-        draw.dh
-      );
+      context.filter = `blur(${Math.max(width, height) * 0.022}px)`;
+      context.globalAlpha = .9;
+      context.drawImage(state.masterImage, cover.sx, cover.sy, cover.sw, cover.sh, -width * .05, -height * .05, width * 1.1, height * 1.1);
+      context.restore();
+      context.save();
+      context.fillStyle = 'rgba(0,0,0,.16)';
+      context.fillRect(0, 0, width, height);
       context.restore();
     }
 
-    function getMainArea(size) {
-      const outerX = clamp(Number(size.mainX) || 0, 0, size.width);
-      const outerY = clamp(Number(size.mainY) || 0, 0, size.height);
-      const outerWidth = Math.max(1, Number(size.mainWidth) || size.width);
-      const outerHeight = Math.max(1, Number(size.mainHeight) || size.height);
-      const maxWidth = Math.max(1, size.width - outerX);
-      const maxHeight = Math.max(1, size.height - outerY);
-      const boundedOuterWidth = Math.min(outerWidth, maxWidth);
-      const boundedOuterHeight = Math.min(outerHeight, maxHeight);
-      const padding = clamp(Number(size.padding) || 0, 0, Math.min(boundedOuterWidth, boundedOuterHeight) / 2 - 0.5);
-      const width = Math.max(1, boundedOuterWidth - padding * 2);
-      const height = Math.max(1, boundedOuterHeight - padding * 2);
-      const radius = clamp(Number(size.cornerRadius) || 0, 0, Math.min(width, height) / 2);
+    // 绘制从主图提取的图层
+    function drawExtractedLayers(context, sourceLayout, targetLayout, size) {
+      const pairs = [
+        ['logo', 'contain'],
+        ['title', 'contain'],
+        ['subtitle', 'contain'],
+        ['badge', 'contain']
+      ];
+      pairs.forEach(([role, fit]) => {
+        const sourceBox = sourceLayout[role];
+        const targetBox = targetLayout[role];
+        if (!sourceBox || !targetBox) return;
+        drawSourceCrop(context, sourceBox, targetBox, size, fit);
+      });
+    }
+
+    // 从主图裁剪并绘制到目标区域
+    function drawSourceCrop(context, sourceBox, targetBox, size, fit) {
+      const sx = clamp(sourceBox.x, 0, 1) * state.masterImage.naturalWidth;
+      const sy = clamp(sourceBox.y, 0, 1) * state.masterImage.naturalHeight;
+      const sw = clamp(sourceBox.w, .01, 1 - sourceBox.x) * state.masterImage.naturalWidth;
+      const sh = clamp(sourceBox.h, .01, 1 - sourceBox.y) * state.masterImage.naturalHeight;
+      const target = toPixels(targetBox, size.width, size.height);
+      const scale = fit === 'cover' ? Math.max(target.w / sw, target.h / sh) : Math.min(target.w / sw, target.h / sh);
+      const dw = sw * scale;
+      const dh = sh * scale;
+      const dx = target.x + (target.w - dw) / 2;
+      const dy = target.y + (target.h - dh) / 2;
+      context.save();
+      context.shadowColor = `rgba(0,0,0,${Number(controls.shadowStrength.value) / 100})`;
+      context.shadowBlur = Math.max(size.width, size.height) * .012;
+      context.shadowOffsetY = Math.max(size.width, size.height) * .004;
+      context.drawImage(state.masterImage, sx, sy, sw, sh, dx, dy, dw, dh);
+      context.restore();
+    }
+
+    // 绘制普通背景
+    function drawBackground(context, size, width, height) {
+      const mode = size.mode === 'auto' ? controls.fitMode.value : size.mode;
+      if (mode === 'blur') {
+        const cover = getCoverRect(state.masterImage, width, height, size.focusX / 100, size.focusY / 100);
+        context.save();
+        context.filter = `blur(${Math.max(width, height) * 0.018}px)`;
+        context.globalAlpha = .72;
+        context.drawImage(state.masterImage, cover.sx, cover.sy, cover.sw, cover.sh, -width * .04, -height * .04, width * 1.08, height * 1.08);
+        context.restore();
+        const contain = getContainRect(state.masterImage, width, height);
+        context.drawImage(state.masterImage, contain.sx, contain.sy, contain.sw, contain.sh, contain.dx, contain.dy, contain.dw, contain.dh);
+        return;
+      }
+      const rect = mode === 'contain' ? getContainRect(state.masterImage, width, height) : getCoverRect(state.masterImage, width, height, size.focusX / 100, size.focusY / 100);
+      context.drawImage(state.masterImage, rect.sx, rect.sy, rect.sw, rect.sh, rect.dx, rect.dy, rect.dw, rect.dh);
+    }
+
+    // 分析视觉布局 - 统一函数，支持 master 和 demo 两种模式
+    function analyzeVisualLayout(image, size, kind) {
+      const sampleWidth = 220;
+      const sampleHeight = Math.max(80, Math.round(sampleWidth * image.naturalHeight / image.naturalWidth));
+      const canvas = document.createElement('canvas');
+      canvas.width = sampleWidth;
+      canvas.height = sampleHeight;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      context.drawImage(image, 0, 0, sampleWidth, sampleHeight);
+      const data = context.getImageData(0, 0, sampleWidth, sampleHeight).data;
+
+      const bg = estimateCornerColor(data, sampleWidth, sampleHeight);
+
+      const lum = new Float32Array(sampleWidth * sampleHeight);
+      for (let i = 0; i < sampleWidth * sampleHeight; i += 1) {
+        lum[i] = data[i * 4] * .299 + data[i * 4 + 1] * .587 + data[i * 4 + 2] * .114;
+      }
+
+      const mask = new Uint8Array(sampleWidth * sampleHeight);
+      for (let y = 1; y < sampleHeight - 1; y += 1) {
+        for (let x = 1; x < sampleWidth - 1; x += 1) {
+          const index = y * sampleWidth + x;
+          const p = index * 4;
+          const local = Math.abs(lum[index] - lum[index - 1]) + Math.abs(lum[index] - lum[index + 1]) + Math.abs(lum[index] - lum[index - sampleWidth]) + Math.abs(lum[index] - lum[index + sampleWidth]);
+          const cornerContrast = Math.abs(data[p] - bg.r) + Math.abs(data[p + 1] - bg.g) + Math.abs(data[p + 2] - bg.b);
+          const chroma = Math.max(data[p], data[p + 1], data[p + 2]) - Math.min(data[p], data[p + 1], data[p + 2]);
+          if (data[p + 3] > 30 && (local > 105 || cornerContrast > (kind === 'demo' ? 92 : 125) || chroma > 96)) {
+            mask[index] = 1;
+          }
+        }
+      }
+
+      const grown = dilateMask(mask, sampleWidth, sampleHeight, kind === 'demo' ? 1 : 2);
+      const rawBoxes = connectedBoxes(grown, sampleWidth, sampleHeight)
+        .filter((box) => box.area > (kind === 'demo' ? 16 : 22))
+        .map((box) => normalizeBox(box, sampleWidth, sampleHeight));
+      const merged = mergeNearbyBoxes(rawBoxes, kind === 'demo' ? .035 : .055)
+        .filter((box) => box.w * box.h > .0018 && box.w * box.h < .42 && box.h > .018 && box.w > .018)
+        .sort((a, b) => scoreContentBox(b) - scoreContentBox(a));
+
+      const layout = mapBoxesToRoles(merged, size);
+      layout.detectedCount = merged.length;
+      layout.summary = summarizeLayout(layout, merged.length, kind);
+
+      return layout;
+    }
+
+    // 将检测到的区块映射到角色（logo、标题、副标题、角标）
+    function mapBoxesToRoles(boxes, size) {
+      const base = defaultLayout(size);
+      if (!boxes.length) return base;
+
+      const candidates = boxes.map((box) => ({ ...box, ratio: box.w / box.h, centerY: box.y + box.h / 2, centerX: box.x + box.w / 2 }));
+
+      // 识别 logo（接近正方形、较小的区块）
+      const logo = firstOrDefault(
+        candidates.filter((box) => box.ratio > .45 && box.ratio < 2.2 && box.w < .36 && box.h < .28).sort((a, b) => (a.y + a.x) - (b.y + b.x)),
+        base.logo
+      );
+
+      // 识别标题（宽高比大、高度足够的区块）
+      const title = firstOrDefault(
+        candidates.filter((box) => box.ratio >= 1.35 && box.h > .035).sort((a, b) => (b.w * b.h) - (a.w * a.h)),
+        base.title
+      );
+
+      // 识别副标题（标题下方的区块）
+      const belowTitle = candidates.filter((box) => box !== title && box.ratio >= 1.25 && box.centerY >= title.centerY - .02)
+        .sort((a, b) => Math.abs(a.y - (title.y + title.h + .035)) - Math.abs(b.y - (title.y + title.h + .035)));
+      const subtitle = firstOrDefault(belowTitle, deriveSubtitle(title, base.subtitle));
+
+      // 识别角标（较小的横向区块）
+      const badgeCandidates = candidates.filter((box) => box !== title && box !== subtitle && box.ratio >= 1.2 && box.h < .16)
+        .sort((a, b) => Math.abs(a.centerY - (subtitle.y + subtitle.h + .08)) - Math.abs(b.centerY - (subtitle.y + subtitle.h + .08)));
+      const badge = firstOrDefault(badgeCandidates, base.badge);
 
       return {
-        x: outerX + padding,
-        y: outerY + padding,
-        width,
-        height,
-        radius
+        logo: expandBox(logo, .18, size.padding),
+        title: expandBox(title, .22, size.padding),
+        subtitle: expandBox(subtitle, .18, size.padding),
+        badge: expandBox(badge, .16, size.padding),
+        textGroup: unionBoxes([title, subtitle, badge])
       };
     }
 
-    function roundedRectPath(context, x, y, width, height, radius) {
-      if (radius <= 0) {
-        context.beginPath();
-        context.rect(x, y, width, height);
-        return;
-      }
+    // 获取默认布局
+    function defaultLayout(size) {
+      const portrait = size.height > size.width * 1.25;
+      const pad = size.padding / 100;
+      const left = clamp(pad + (size.focusX - 50) / 500, pad, .45);
+      const top = clamp(portrait ? .58 : .14 + (size.focusY - 50) / 500, pad, .7);
 
-      context.beginPath();
-      context.moveTo(x + radius, y);
-      context.lineTo(x + width - radius, y);
-      context.quadraticCurveTo(x + width, y, x + width, y + radius);
-      context.lineTo(x + width, y + height - radius);
-      context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-      context.lineTo(x + radius, y + height);
-      context.quadraticCurveTo(x, y + height, x, y + height - radius);
-      context.lineTo(x, y + radius);
-      context.quadraticCurveTo(x, y, x + radius, y);
-      context.closePath();
+      const title = { x: left, y: top, w: portrait ? .78 : .48, h: portrait ? .11 : .16 };
+      const subtitle = { x: left, y: title.y + title.h + .018, w: title.w * .88, h: title.h * .55 };
+      const badge = { x: left, y: subtitle.y + subtitle.h + .025, w: portrait ? .28 : .18, h: portrait ? .055 : .08 };
+      const logo = { x: left, y: pad, w: portrait ? .16 : .1, h: portrait ? .08 : .13 };
+
+      return { logo, title, subtitle, badge, textGroup: unionBoxes([title, subtitle, badge]), detectedCount: 0, summary: '' };
     }
 
+    // 绘制 Logo
+    function drawLogo(context, box, size) {
+      const rect = toPixels(box, size.width, size.height);
+      if (state.logoImage) {
+        drawImageContain(context, state.logoImage, rect.x, rect.y, rect.w, rect.h);
+        return;
+      }
+      context.save();
+      context.fillStyle = 'rgba(255,255,255,.9)';
+      roundRect(context, rect.x, rect.y, rect.w, rect.h, Math.min(rect.w, rect.h) * .18);
+      context.fill();
+      context.fillStyle = '#101828';
+      context.font = `900 ${Math.max(12, rect.h * .34)}px ${controls.fontFamily.value}`;
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(controls.brandText.value || 'LOGO', rect.x + rect.w / 2, rect.y + rect.h / 2, rect.w * .82);
+      context.restore();
+    }
+
+    // 绘制文字图层
+    function drawTextLayer(context, text, box, size, scale, weight) {
+      if (!text.trim()) return;
+      const rect = toPixels(box, size.width, size.height);
+      const fontSize = Math.max(12, rect.h * .7 * scale);
+      context.save();
+      context.fillStyle = controls.textColor.value;
+      context.font = `${weight} ${fontSize}px ${controls.fontFamily.value}`;
+      context.textBaseline = 'top';
+      context.shadowColor = `rgba(0,0,0,${Number(controls.shadowStrength.value) / 100})`;
+      context.shadowBlur = fontSize * .18;
+      context.shadowOffsetY = fontSize * .08;
+      wrapText(context, text.trim(), rect.x, rect.y, rect.w, fontSize * 1.12, Math.max(1, Math.floor(rect.h / (fontSize * .88))));
+      context.restore();
+    }
+
+    // 绘制角标/按钮
+    function drawBadge(context, text, box, size) {
+      if (!text.trim()) return;
+      const rect = toPixels(box, size.width, size.height);
+      context.save();
+      context.fillStyle = controls.accentColor.value;
+      roundRect(context, rect.x, rect.y, rect.w, rect.h, rect.h / 2);
+      context.fill();
+      context.fillStyle = '#101828';
+      context.font = `900 ${Math.max(10, rect.h * .42)}px ${controls.fontFamily.value}`;
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(text.trim(), rect.x + rect.w / 2, rect.y + rect.h / 2, rect.w * .78);
+      context.restore();
+    }
+
+    // 绘制文字区域暗底渐变
+    function drawTextScrim(context, box, alpha) {
+      if (!alpha || !box) return;
+      const rect = toPixels(expandBox(box, .22, 0), context.canvas.width, context.canvas.height);
+      const gradient = context.createLinearGradient(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
+      gradient.addColorStop(0, `rgba(0,0,0,${alpha})`);
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      context.save();
+      context.fillStyle = gradient;
+      roundRect(context, rect.x, rect.y, rect.w, rect.h, Math.min(rect.w, rect.h) * .12);
+      context.fill();
+      context.restore();
+    }
+
+    // 估算角落背景色
+    function estimateCornerColor(data, width, height) {
+      const points = [
+        [2, 2],
+        [width - 3, 2],
+        [2, height - 3],
+        [width - 3, height - 3],
+        [Math.floor(width / 2), 2],
+        [2, Math.floor(height / 2)]
+      ];
+      const sum = points.reduce((acc, [x, y]) => {
+        const index = (y * width + x) * 4;
+        acc.r += data[index];
+        acc.g += data[index + 1];
+        acc.b += data[index + 2];
+        return acc;
+      }, { r: 0, g: 0, b: 0 });
+      return { r: sum.r / points.length, g: sum.g / points.length, b: sum.b / points.length };
+    }
+
+    // 膨胀掩码
+    function dilateMask(mask, width, height, passes) {
+      let current = mask;
+      for (let pass = 0; pass < passes; pass += 1) {
+        const next = new Uint8Array(current);
+        for (let y = 1; y < height - 1; y += 1) {
+          for (let x = 1; x < width - 1; x += 1) {
+            const index = y * width + x;
+            if (!current[index]) continue;
+            next[index - 1] = 1;
+            next[index + 1] = 1;
+            next[index - width] = 1;
+            next[index + width] = 1;
+          }
+        }
+        current = next;
+      }
+      return current;
+    }
+
+    // 寻找连通区域（岛屿算法）
+    function connectedBoxes(mask, width, height) {
+      const boxes = [];
+      const queue = [];
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          const start = y * width + x;
+          if (!mask[start]) continue;
+          let minX = x, maxX = x, minY = y, maxY = y, area = 0;
+          mask[start] = 0;
+          queue.push([x, y]);
+          while (queue.length) {
+            const [cx, cy] = queue.pop();
+            area += 1;
+            minX = Math.min(minX, cx);
+            maxX = Math.max(maxX, cx);
+            minY = Math.min(minY, cy);
+            maxY = Math.max(maxY, cy);
+            for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+              const nx = cx + dx, ny = cy + dy;
+              if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+              const next = ny * width + nx;
+              if (!mask[next]) continue;
+              mask[next] = 0;
+              queue.push([nx, ny]);
+            }
+          }
+          boxes.push({ x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1, area });
+        }
+      }
+      return boxes;
+    }
+
+    // 合并相近的区块
+    function mergeNearbyBoxes(boxes, gap = .04) {
+      const merged = [];
+      boxes.forEach((box) => {
+        const target = merged.find((entry) => overlapsOrNear(entry, box, gap));
+        if (target) {
+          Object.assign(target, unionBoxes([target, box]));
+        } else {
+          merged.push({ ...box });
+        }
+      });
+      return merged;
+    }
+
+    // 检查两个区块是否重叠或接近
+    function overlapsOrNear(a, b, gap) {
+      return !(a.x + a.w + gap < b.x || b.x + b.w + gap < a.x || a.y + a.h + gap < b.y || b.y + b.h + gap < a.y);
+    }
+
+    // 归一化区块坐标（转换为 0-1 范围）
+    function normalizeBox(box, width, height) {
+      return { x: box.x / width, y: box.y / height, w: box.w / width, h: box.h / height, area: box.area / (width * height) };
+    }
+
+    // 扩展区块
+    function expandBox(box, amount, padding) {
+      const pad = padding / 100;
+      const x = clamp(box.x - box.w * amount, pad, 1 - pad);
+      const y = clamp(box.y - box.h * amount, pad, 1 - pad);
+      return {
+        x,
+        y,
+        w: clamp(box.w * (1 + amount * 2), .04, 1 - pad - x),
+        h: clamp(box.h * (1 + amount * 2), .035, 1 - pad - y)
+      };
+    }
+
+    // 合并多个区块为一个外接矩形
+    function unionBoxes(boxes) {
+      const x1 = Math.min(...boxes.map((box) => box.x));
+      const y1 = Math.min(...boxes.map((box) => box.y));
+      const x2 = Math.max(...boxes.map((box) => box.x + box.w));
+      const y2 = Math.max(...boxes.map((box) => box.y + box.h));
+      return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+    }
+
+    // 推导副标题位置
+    function deriveSubtitle(title, fallback) {
+      return { x: title.x, y: clamp(title.y + title.h + .02, 0, .9), w: title.w * .9, h: Math.max(.04, title.h * .45) || fallback.h };
+    }
+
+    // 汇总布局信息
+    function summarizeLayout(layout, count, kind) {
+      const prefix = kind === 'master' ? '主图识别' : 'demo识别';
+      return `<span class="pill">${prefix} ${count} 个内容块</span> logo ${percentBox(layout.logo)}；标题 ${percentBox(layout.title)}；副标题 ${percentBox(layout.subtitle)}；角标 ${percentBox(layout.badge)}。`;
+    }
+
+    // 格式化区块位置和大小
+    function percentBox(box) {
+      return `${Math.round(box.x * 100)}%,${Math.round(box.y * 100)}% / ${Math.round(box.w * 100)}%×${Math.round(box.h * 100)}%`;
+    }
+
+    // 将归一化坐标转换为像素坐标
+    function toPixels(box, width, height) {
+      return { x: box.x * width, y: box.y * height, w: box.w * width, h: box.h * height };
+    }
+
+    // 安全获取列表第一个元素或默认值
+    function firstOrDefault(list, fallback) {
+      return list[0] || fallback;
+    }
+
+    // 计算内容区块得分
+    function scoreContentBox(box) {
+      return box.w * box.h * 2 + Math.min(box.w / Math.max(box.h, .001), 5) * .02 - box.y * .02;
+    }
+
+    // 获取覆盖模式裁剪矩形
     function getCoverRect(image, targetWidth, targetHeight, focusX, focusY) {
       const sourceRatio = image.naturalWidth / image.naturalHeight;
       const targetRatio = targetWidth / targetHeight;
-      let sx = 0;
-      let sy = 0;
-      let sw = image.naturalWidth;
-      let sh = image.naturalHeight;
-
+      let sx = 0, sy = 0, sw = image.naturalWidth, sh = image.naturalHeight;
       if (sourceRatio > targetRatio) {
         sw = image.naturalHeight * targetRatio;
         sx = (image.naturalWidth - sw) * focusX;
@@ -947,30 +920,59 @@
         sh = image.naturalWidth / targetRatio;
         sy = (image.naturalHeight - sh) * focusY;
       }
-
       return { sx, sy, sw, sh, dx: 0, dy: 0, dw: targetWidth, dh: targetHeight };
     }
 
+    // 获取包含模式裁剪矩形
     function getContainRect(image, targetWidth, targetHeight) {
       const scale = Math.min(targetWidth / image.naturalWidth, targetHeight / image.naturalHeight);
       const dw = image.naturalWidth * scale;
       const dh = image.naturalHeight * scale;
-      return {
-        sx: 0,
-        sy: 0,
-        sw: image.naturalWidth,
-        sh: image.naturalHeight,
-        dx: (targetWidth - dw) / 2,
-        dy: (targetHeight - dh) / 2,
-        dw,
-        dh
-      };
+      return { sx: 0, sy: 0, sw: image.naturalWidth, sh: image.naturalHeight, dx: (targetWidth - dw) / 2, dy: (targetHeight - dh) / 2, dw, dh };
     }
 
+    // 在指定区域内绘制图片（contain 模式）
+    function drawImageContain(context, image, x, y, width, height) {
+      const rect = getContainRect(image, width, height);
+      context.drawImage(image, rect.sx, rect.sy, rect.sw, rect.sh, x + rect.dx, y + rect.dy, rect.dw, rect.dh);
+    }
+
+    // 自动换行绘制文字
+    function wrapText(context, text, x, y, maxWidth, lineHeight, maxLines) {
+      const chars = Array.from(text);
+      let line = '', lines = [];
+      chars.forEach((char) => {
+        const test = line + char;
+        if (context.measureText(test).width > maxWidth && line) {
+          lines.push(line);
+          line = char;
+        } else {
+          line = test;
+        }
+      });
+      if (line) lines.push(line);
+      lines.slice(0, maxLines).forEach((entry, index) => {
+        context.fillText(index === maxLines - 1 && lines.length > maxLines ? `${entry.slice(0, -1)}…` : entry, x, y + index * lineHeight, maxWidth);
+      });
+    }
+
+    // 绘制圆角矩形
+    function roundRect(context, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      context.beginPath();
+      context.moveTo(x + r, y);
+      context.arcTo(x + width, y, x + width, y + height, r);
+      context.arcTo(x + width, y + height, x, y + height, r);
+      context.arcTo(x, y + height, x, y, r);
+      context.arcTo(x, y, x + width, y, r);
+      context.closePath();
+    }
+
+    // 渲染生成结果
     function renderResults() {
-      resultGrid.innerHTML = '';
-      if (state.results.length === 0) {
-        resultGrid.innerHTML = '<div class="empty">还没有生成图片。</div>';
+      controls.resultGrid.innerHTML = '';
+      if (!state.results.length) {
+        controls.resultGrid.innerHTML = '<div class="empty">还没有生成图片。</div>';
         return;
       }
       state.results.forEach((result) => {
@@ -983,20 +985,12 @@
             <span class="hint">${result.width} × ${result.height}px · PNG · ${getDemoRoleLabel(result.demoRole)}</span>
             <span class="hint">预览可能包含半透明 demo 参考层；下载文件为最终输出图。</span>
             <a class="button" download="${escapeHtml(result.fileName)}" href="${result.url}">下载这张</a>
-          </div>
-        `;
-        resultGrid.appendChild(card);
+          </div>`;
+        controls.resultGrid.appendChild(card);
       });
     }
 
-    function getDemoRoleLabel(role) {
-      return {
-        reference: 'demo 构图参考',
-        template: 'demo 模板入图',
-        marker: 'demo 标记参考'
-      }[role] || 'demo 构图参考';
-    }
-
+    // 加载图片文件
     function loadImage(file) {
       return new Promise((resolve, reject) => {
         const url = URL.createObjectURL(file);
@@ -1007,11 +1001,13 @@
       });
     }
 
+    // 显示状态消息
     function showStatus(message, type = '') {
-      statusBox.textContent = message;
-      statusBox.className = `status show ${type}`.trim();
+      controls.statusBox.textContent = message;
+      controls.statusBox.className = `status show ${type}`.trim();
     }
 
+    // 下载数据 URL 文件
     function downloadDataUrl(url, fileName) {
       const link = document.createElement('a');
       link.href = url;
@@ -1021,14 +1017,12 @@
       document.body.removeChild(link);
     }
 
+    // 安全化文件名
     function safeFileName(value) {
-      return String(value || 'entry-image')
-        .trim()
-        .replace(/\s+/g, '-')
-        .replace(/[\\/:*?"<>|]/g, '')
-        .slice(0, 80) || 'entry-image';
+      return String(value || 'entry-image').trim().replace(/\s+/g, '-').replace(/[\\/:*?"<>|]/g, '').slice(0, 80) || 'entry-image';
     }
 
+    // HTML 实体转义
     function escapeHtml(value) {
       return String(value).replace(/[&<>'"]/g, (char) => ({
         '&': '&amp;',
@@ -1039,9 +1033,16 @@
       }[char]));
     }
 
+    // 限制数值范围
     function clamp(value, min, max) {
       return Math.min(max, Math.max(min, value));
     }
+
+    // 生成唯一 ID
+    function makeId() {
+      return crypto.randomUUID ? crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
   </script>
-</body>
-</html>
+
+
+</body></html>
