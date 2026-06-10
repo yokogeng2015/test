@@ -3,1287 +3,1014 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>入口图生成工具</title>
+<title>入口图生成工具 v2</title>
 <script src="https://cdn.jsdelivr.net/npm/psd@3.4.0/dist/psd.min.js"></script>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#16171a;--bg2:#1e1f24;--bg3:#26272e;--bg4:#2e303a;--bg5:#363840;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--border3:rgba(255,255,255,0.2);
+  --text:#e2e3e8;--text2:#9395a0;--text3:#5a5c68;
+  --accent:#6c63f5;--accent-l:#8b84f7;--accent-bg:rgba(108,99,245,0.14);
+  --green:#3ecf8e;--green-bg:rgba(62,207,142,0.12);
+  --orange:#f0a030;--orange-bg:rgba(240,160,48,0.12);
+  --blue:#4a9eff;--blue-bg:rgba(74,158,255,0.12);
+  --red:#e24b4b;--red-bg:rgba(226,75,75,0.12);
+  --r:8px;--rl:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
 
-:root {
-  --bg: #1a1b1e;
-  --bg2: #25262b;
-  --bg3: #2c2d33;
-  --bg4: #34353c;
-  --border: rgba(255,255,255,0.08);
-  --border2: rgba(255,255,255,0.14);
-  --text: #e8e9ec;
-  --text2: #9a9ba5;
-  --text3: #6b6c75;
-  --accent: #7c6fef;
-  --accent2: #9d93f5;
-  --accent-bg: rgba(124,111,239,0.15);
-  --success: #3ecf8e;
-  --warn: #f0a030;
-  --danger: #e24b4b;
-  --radius: 8px;
-  --radius-lg: 12px;
-}
+/* ── Layout ── */
+.app{display:flex;flex:1;overflow:hidden}
+.sidebar{width:280px;min-width:280px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:48px;min-height:48px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:8px}
+.workspace{flex:1;overflow:auto;padding:20px}
+.statusbar{height:26px;background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:16px;font-size:11px;color:var(--text3)}
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.5;
-  min-height: 100vh;
-}
+/* ── Sidebar ── */
+.sb-section{padding:12px}
+.sb-section+.sb-section{border-top:1px solid var(--border)}
+.sb-title{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px}
 
-/* Layout */
-.app { display: flex; height: 100vh; overflow: hidden; }
+/* ── Upload zone ── */
+.upzone{border:1.5px dashed var(--border2);border-radius:var(--rl);padding:16px;text-align:center;cursor:pointer;transition:.15s;background:var(--bg3)}
+.upzone:hover,.upzone.over{border-color:var(--accent);background:var(--accent-bg)}
+.upzone input{display:none}
+.upzone .uz-icon{font-size:22px;margin-bottom:4px;opacity:.5}
+.upzone p{font-size:11px;color:var(--text2)}
+.upzone strong{color:var(--accent-l)}
 
-.sidebar {
-  width: 300px;
-  min-width: 300px;
-  background: var(--bg2);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
+/* ── Layers ── */
+.layer-item{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:var(--r);cursor:pointer;margin-bottom:2px;border:1px solid transparent;transition:.1s}
+.layer-item:hover{background:var(--bg4)}
+.li-thumb{width:32px;height:32px;border-radius:4px;background:var(--bg5);border:1px solid var(--border);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.li-thumb canvas{max-width:100%;max-height:100%;object-fit:contain}
+.li-name{flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.role-sel{background:var(--bg5);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 5px;font-size:11px;cursor:pointer;flex-shrink:0}
+.role-sel option{background:var(--bg3)}
 
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+/* role colors */
+.role-bg .li-name::before{content:'BG ';color:var(--blue);font-size:10px;font-weight:600}
+.role-product .li-name::before{content:'产品 ';color:var(--green);font-size:10px;font-weight:600}
+.role-title .li-name::before{content:'文字 ';color:var(--orange);font-size:10px;font-weight:600}
+.role-deco .li-name::before{content:'装饰 ';color:var(--accent-l);font-size:10px;font-weight:600}
 
-.topbar {
-  height: 52px;
-  min-height: 52px;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  gap: 12px;
-}
+/* ── Sizes ── */
+.size-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:var(--r);cursor:pointer;border:1px solid transparent;margin-bottom:3px;transition:.1s;background:var(--bg3)}
+.size-item:hover{border-color:var(--border2)}
+.size-item.active{border-color:var(--accent);background:var(--accent-bg)}
+.size-item.configured::after{content:'✓';color:var(--green);font-size:11px;margin-left:auto}
+.si-check{accent-color:var(--accent);flex-shrink:0}
+.si-name{flex:1;font-size:12px;font-weight:500}
+.si-dim{font-size:10px;color:var(--text3)}
 
-.workspace { flex: 1; overflow: auto; padding: 24px; }
+/* ── Buttons ── */
+.btn{border:1px solid var(--border2);background:var(--bg4);color:var(--text);border-radius:var(--r);padding:6px 12px;font-size:13px;cursor:pointer;transition:.1s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn:hover{background:var(--bg5);border-color:var(--border3)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+.btn-primary:hover{background:#5a52d5}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-full{width:100%;justify-content:center}
+.btn-ghost{border-color:transparent;background:transparent;color:var(--text2)}
+.btn-ghost:hover{background:var(--bg4);color:var(--text)}
+.btn-danger{color:var(--red);border-color:rgba(226,75,75,.25)}
+.btn-danger:hover{background:var(--red-bg)}
 
-/* Sidebar sections */
-.sidebar-header {
-  padding: 16px 16px 12px;
-  border-bottom: 1px solid var(--border);
-}
+/* ── Steps ── */
+.steps{display:flex;align-items:center;gap:0;margin-right:auto}
+.step-btn{padding:5px 14px;font-size:13px;border-radius:var(--r);cursor:pointer;color:var(--text3);border:none;background:transparent;transition:.1s;position:relative}
+.step-btn.active{color:var(--accent-l);background:var(--accent-bg)}
+.step-btn .step-num{font-size:10px;font-weight:700;margin-right:4px;opacity:.6}
 
-.sidebar-header h1 {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  letter-spacing: -0.2px;
-}
+/* ── Panes ── */
+.pane{display:none}.pane.active{display:block}
 
-.sidebar-header p {
-  font-size: 12px;
-  color: var(--text3);
-  margin-top: 2px;
-}
+/* ── Step1: Layer role assignment ── */
+.role-guide{background:var(--bg3);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:16px}
+.role-guide p{font-size:12px;color:var(--text2);line-height:1.7}
+.role-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.role-tag{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.rt-bg{background:var(--blue-bg);color:var(--blue)}
+.rt-product{background:var(--green-bg);color:var(--green)}
+.rt-title{background:var(--orange-bg);color:var(--orange)}
+.rt-deco{background:var(--accent-bg);color:var(--accent-l)}
+.rt-none{background:var(--bg4);color:var(--text3)}
 
-.sidebar-body { flex: 1; overflow-y: auto; padding: 12px; }
-.sidebar-footer {
-  padding: 12px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+/* ── Step2: Size config ── */
+.size-config-wrap{display:flex;gap:20px;align-items:flex-start}
+.demo-panel{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;min-width:0}
+.demo-panel-header{padding:9px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)}
+.demo-panel-body{padding:16px;display:flex;align-items:center;justify-content:center;background:#111;min-height:260px;position:relative;overflow:hidden}
+.demo-empty{text-align:center;color:var(--text3);font-size:12px;padding:40px}
+.demo-empty .de-icon{font-size:32px;opacity:.3;margin-bottom:6px}
 
-/* Section */
-.section-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  padding: 8px 4px 4px;
-}
+/* canvas drawing */
+.canvas-wrap{position:relative;display:inline-block;cursor:crosshair;user-select:none}
+.canvas-wrap canvas{display:block}
+.sel-rect{position:absolute;border:2px dashed rgba(255,255,255,.7);background:rgba(255,255,255,.05);pointer-events:none}
+.zone-overlay{position:absolute;pointer-events:none;border-radius:2px}
+.zone-label{position:absolute;top:0;left:0;font-size:10px;font-weight:600;padding:2px 6px;border-radius:2px 0 4px 0;white-space:nowrap}
+.zo-bg{border:2px solid var(--blue);background:rgba(74,158,255,.1)}
+.zo-product{border:2px solid var(--green);background:rgba(62,207,142,.1)}
+.zo-title{border:2px solid var(--orange);background:rgba(240,160,48,.1)}
+.zo-safe{border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.04)}
+.zl-bg{background:var(--blue);color:#fff}
+.zl-product{background:var(--green);color:#000}
+.zl-title{background:var(--orange);color:#000}
+.zl-safe{background:rgba(255,255,255,.2);color:#fff}
 
-/* Upload zone */
-.upload-zone {
-  border: 1.5px dashed var(--border2);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.15s;
-  background: var(--bg3);
-}
-.upload-zone:hover, .upload-zone.drag-over {
-  border-color: var(--accent);
-  background: var(--accent-bg);
-}
-.upload-zone input { display: none; }
-.upload-zone .icon { font-size: 24px; margin-bottom: 6px; opacity: 0.5; }
-.upload-zone p { font-size: 12px; color: var(--text2); }
-.upload-zone strong { color: var(--accent2); }
+/* ── Zone editor panel ── */
+.zone-panel{width:220px;min-width:220px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:14px}
+.zp-title{font-size:13px;font-weight:600;margin-bottom:12px}
+.zp-hint{font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:10px;background:var(--bg3);padding:8px;border-radius:var(--r)}
+.type-btns{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+.type-btn{flex:1;min-width:0;padding:5px 4px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);color:var(--text3);cursor:pointer;text-align:center;transition:.1s;white-space:nowrap}
+.type-btn.tb-bg.on{background:var(--blue-bg);border-color:var(--blue);color:var(--blue)}
+.type-btn.tb-product.on{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.type-btn.tb-title.on{background:var(--orange-bg);border-color:var(--orange);color:var(--orange)}
+.type-btn.tb-safe.on{background:var(--bg4);border-color:var(--border3);color:var(--text)}
 
-/* Layer list */
-.layer-list { margin-top: 8px; }
-.layer-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  border: 1px solid transparent;
-  margin-bottom: 2px;
-  transition: all 0.1s;
-}
-.layer-item:hover { background: var(--bg4); }
-.layer-item.selected { background: var(--accent-bg); border-color: var(--accent); }
-.layer-item .layer-thumb {
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  background: var(--bg4);
-  border: 1px solid var(--border);
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.layer-item .layer-thumb canvas { width: 100%; height: 100%; object-fit: contain; }
-.layer-item .layer-name { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.layer-item .layer-type {
-  font-size: 10px;
-  color: var(--text3);
-  background: var(--bg4);
-  padding: 1px 5px;
-  border-radius: 4px;
-}
+.field{margin-bottom:8px}
+.field label{font-size:10px;color:var(--text3);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+.field input,.field select{width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12px}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+.field input[readonly]{color:var(--text2)}
+.coords-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.field select option{background:var(--bg3)}
 
-/* Size list */
-.size-list { display: flex; flex-direction: column; gap: 6px; }
-.size-card {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 8px 10px;
-  cursor: pointer;
-  transition: all 0.1s;
-  position: relative;
-}
-.size-card:hover { border-color: var(--border2); }
-.size-card.active { border-color: var(--accent); background: var(--accent-bg); }
-.size-card.has-zone::after {
-  content: '✓';
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--success);
-  font-size: 12px;
-}
-.size-card-header { display: flex; align-items: center; gap: 6px; }
-.size-check { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
-.size-name { font-size: 13px; font-weight: 500; flex: 1; }
-.size-dim { font-size: 11px; color: var(--text3); }
-.size-zone-info { font-size: 11px; color: var(--text2); margin-top: 4px; padding-left: 20px; }
+/* align picker */
+.align-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:4px}
+.align-btn{aspect-ratio:1;border:1px solid var(--border2);background:var(--bg4);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3);transition:.1s}
+.align-btn:hover{border-color:var(--border3)}
+.align-btn.on{background:var(--accent-bg);border-color:var(--accent);color:var(--accent-l)}
 
-/* Add size form */
-.add-size-form {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 10px;
-  margin-top: 8px;
-  display: none;
-}
-.add-size-form.open { display: block; }
-.form-row { display: flex; gap: 6px; margin-bottom: 6px; }
-.form-row input, .form-row select {
-  flex: 1;
-  background: var(--bg4);
-  border: 1px solid var(--border2);
-  border-radius: 6px;
-  color: var(--text);
-  padding: 5px 8px;
-  font-size: 12px;
-}
-.form-row input::placeholder { color: var(--text3); }
-.form-row label { font-size: 12px; color: var(--text2); display: flex; align-items: center; }
+/* zone list */
+.zone-list{margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.zl-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.zt{display:flex;align-items:center;gap:5px;padding:4px 6px;background:var(--bg3);border-radius:5px;margin-bottom:3px;font-size:11px;cursor:pointer;border:1px solid transparent}
+.zt:hover{border-color:var(--border2)}
+.zt.sel{border-color:var(--accent)}
+.zt .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-bg{background:var(--blue)}.dot-product{background:var(--green)}.dot-title{background:var(--orange)}.dot-safe{background:var(--text3)}
+.zt .ztn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zt .ztd{color:var(--text3);cursor:pointer;padding:0 2px;font-size:13px}.zt .ztd:hover{color:var(--red)}
 
-/* Buttons */
-.btn {
-  border: 1px solid var(--border2);
-  background: var(--bg4);
-  color: var(--text);
-  border-radius: var(--radius);
-  padding: 6px 12px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.1s;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-}
-.btn:hover { background: var(--bg3); border-color: var(--border2); }
-.btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-  font-weight: 500;
-}
-.btn-primary:hover { background: #6c5fe0; }
-.btn-sm { padding: 4px 10px; font-size: 12px; }
-.btn-full { width: 100%; justify-content: center; }
-.btn-danger { border-color: rgba(226,75,75,0.3); color: var(--danger); }
-.btn-danger:hover { background: rgba(226,75,75,0.1); }
+/* demo upzone inline */
+.demo-upzone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:.15s;width:100%}
+.demo-upzone:hover{border-color:var(--accent);background:var(--accent-bg)}
+.demo-upzone input{display:none}
+.demo-upzone p{font-size:11px;color:var(--text2);margin-top:4px}
 
-/* Canvas area */
-.canvas-container {
-  position: relative;
-  display: inline-block;
-  cursor: crosshair;
-  user-select: none;
-}
-.canvas-container canvas { display: block; }
+/* ── Results ── */
+.results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.res-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.res-card canvas{width:100%;display:block}
+.res-card-foot{padding:8px 10px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.res-name{font-size:12px;font-weight:500}.res-dim{font-size:10px;color:var(--text3)}
 
-.canvas-wrap {
-  display: flex;
-  align-items: flex-start;
-  gap: 24px;
-}
+/* ── Add size form ── */
+.add-form{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;margin-top:6px;display:none}
+.add-form.open{display:block}
+.af-row{display:flex;gap:5px;margin-bottom:5px}
+.af-row input{flex:1;background:var(--bg4);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:4px 7px;font-size:12px}
+.af-row input::placeholder{color:var(--text3)}
 
-.canvas-panel {
-  flex: 1;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
+/* ── Empty ── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center;color:var(--text3);gap:8px}
+.empty .ei{font-size:36px;opacity:.25}
+.empty p{font-size:12px;line-height:1.7}
 
-.canvas-panel-header {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--text2);
-}
+/* ── Alert ── */
+.alert{padding:7px 11px;border-radius:var(--r);font-size:12px;margin-top:6px;display:none;line-height:1.5}
+.alert.show{display:block}
+.alert-warn{background:var(--orange-bg);border:1px solid rgba(240,160,48,.3);color:var(--orange)}
+.alert-ok{background:var(--green-bg);border:1px solid rgba(62,207,142,.3);color:var(--green)}
 
-.canvas-panel-body {
-  padding: 16px;
-  overflow: auto;
-  min-height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #141416;
-}
-
-/* Selection overlay */
-.selection-rect {
-  position: absolute;
-  border: 2px solid var(--accent2);
-  background: rgba(124,111,239,0.12);
-  pointer-events: none;
-}
-.selection-handle {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background: var(--accent2);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: all;
-  cursor: nwse-resize;
-}
-
-/* Zone labels */
-.zone-badge {
-  position: absolute;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-  pointer-events: none;
-  white-space: nowrap;
-}
-.zone-visual { background: rgba(124,111,239,0.85); color: #fff; }
-.zone-text { background: rgba(240,160,48,0.85); color: #fff; }
-.zone-safe { background: rgba(62,207,142,0.85); color: #fff; }
-
-/* Results grid */
-.results-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-.result-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-.result-card canvas { width: 100%; display: block; }
-.result-card-footer {
-  padding: 8px 10px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.result-card-name { font-size: 12px; font-weight: 500; }
-.result-card-dim { font-size: 11px; color: var(--text3); }
-
-/* Tabs */
-.tabs { display: flex; gap: 2px; }
-.tab {
-  padding: 6px 14px;
-  font-size: 13px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  color: var(--text2);
-  border: none;
-  background: transparent;
-  transition: all 0.1s;
-}
-.tab.active { background: var(--accent-bg); color: var(--accent2); }
-.tab:hover:not(.active) { background: var(--bg4); color: var(--text); }
-
-/* Pane */
-.pane { display: none; }
-.pane.active { display: block; }
-
-/* Zone editor panel */
-.zone-editor {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 14px;
-  width: 240px;
-  min-width: 240px;
-}
-.zone-editor h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
-.zone-type-btns { display: flex; gap: 4px; margin-bottom: 12px; }
-.zone-type-btn {
-  flex: 1;
-  padding: 5px 0;
-  font-size: 11px;
-  border-radius: 6px;
-  border: 1px solid var(--border2);
-  background: var(--bg4);
-  color: var(--text2);
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.1s;
-}
-.zone-type-btn.active-visual { background: rgba(124,111,239,0.2); border-color: var(--accent); color: var(--accent2); }
-.zone-type-btn.active-text { background: rgba(240,160,48,0.2); border-color: var(--warn); color: var(--warn); }
-.zone-type-btn.active-safe { background: rgba(62,207,142,0.2); border-color: var(--success); color: var(--success); }
-
-.zone-field { margin-bottom: 8px; }
-.zone-field label { font-size: 11px; color: var(--text3); display: block; margin-bottom: 3px; }
-.zone-field input {
-  width: 100%;
-  background: var(--bg4);
-  border: 1px solid var(--border2);
-  border-radius: 6px;
-  color: var(--text);
-  padding: 5px 8px;
-  font-size: 12px;
-}
-.zone-field input:focus { outline: none; border-color: var(--accent); }
-
-.zones-list { margin-top: 10px; }
-.zones-list-title { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
-.zone-tag {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
-  background: var(--bg3);
-  border-radius: 6px;
-  margin-bottom: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  border: 1px solid transparent;
-}
-.zone-tag:hover { border-color: var(--border2); }
-.zone-tag.selected-zone { border-color: var(--accent); }
-.zone-tag .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.dot-visual { background: var(--accent); }
-.dot-text { background: var(--warn); }
-.dot-safe { background: var(--success); }
-.zone-tag .ztname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.zone-tag .zdel { color: var(--text3); font-size: 14px; cursor: pointer; padding: 0 2px; }
-.zone-tag .zdel:hover { color: var(--danger); }
-
-/* Layer assignment */
-.layer-assign {
-  margin-top: 10px;
-  border-top: 1px solid var(--border);
-  padding-top: 10px;
-}
-.layer-assign-title { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
-.layer-assign-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 5px;
-  font-size: 12px;
-}
-.layer-assign-row select {
-  flex: 1;
-  background: var(--bg4);
-  border: 1px solid var(--border2);
-  border-radius: 6px;
-  color: var(--text);
-  padding: 4px 6px;
-  font-size: 12px;
-}
-
-/* Status bar */
-.statusbar {
-  height: 28px;
-  background: var(--bg2);
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-  gap: 16px;
-  font-size: 11px;
-  color: var(--text3);
-}
-.statusbar span { display: flex; align-items: center; gap: 4px; }
-.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); }
-.status-dot.ok { background: var(--success); }
-
-/* Empty state */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 24px;
-  text-align: center;
-  color: var(--text3);
-  gap: 8px;
-}
-.empty-state .empty-icon { font-size: 40px; opacity: 0.3; }
-.empty-state p { font-size: 13px; }
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
-
-/* Alert */
-.alert {
-  padding: 8px 12px;
-  border-radius: var(--radius);
-  font-size: 12px;
-  margin-bottom: 8px;
-  display: none;
-}
-.alert.show { display: block; }
-.alert-warn { background: rgba(240,160,48,0.15); border: 1px solid rgba(240,160,48,0.3); color: var(--warn); }
-.alert-success { background: rgba(62,207,142,0.15); border: 1px solid rgba(62,207,142,0.3); color: var(--success); }
-
-/* Tooltip */
-[data-tip] { position: relative; }
-[data-tip]:hover::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: #000;
-  color: #fff;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
-  z-index: 100;
-  pointer-events: none;
-}
-
-/* Progress */
-.progress-bar {
-  height: 3px;
-  background: var(--bg4);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-top: 8px;
-  display: none;
-}
-.progress-bar.show { display: block; }
-.progress-fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 2px;
-  transition: width 0.2s;
-}
+/* misc */
+.dot-ok{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block}
+.dot-idle{width:6px;height:6px;border-radius:50%;background:var(--text3);display:inline-block}
+.tag{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:500}
+.divider{border:none;border-top:1px solid var(--border);margin:8px 0}
 </style>
 </head>
 <body>
+
+<!-- ══ Topbar ══ -->
+<div class="topbar" style="border-bottom:1px solid var(--border)">
+  <span style="font-size:14px;font-weight:600;color:var(--text);margin-right:8px;">入口图生成工具</span>
+  <div class="steps">
+    <button class="step-btn active" data-step="1"><span class="step-num">01</span>图层解析</button>
+    <button class="step-btn" data-step="2"><span class="step-num">02</span>尺寸配置</button>
+    <button class="step-btn" data-step="3"><span class="step-num">03</span>生成结果</button>
+  </div>
+  <button class="btn btn-primary" id="generateBtn" style="margin-left:auto">⚡ 生成所有尺寸</button>
+</div>
+
 <div class="app">
 
-<!-- Sidebar -->
+<!-- ══ Sidebar ══ -->
 <div class="sidebar">
-  <div class="sidebar-header">
-    <h1>入口图生成工具</h1>
-    <p>PSD 解析 · 框选定位 · 批量导出</p>
+
+  <!-- PSD upload -->
+  <div class="sb-section">
+    <div class="sb-title">源文件 (PSD / PNG)</div>
+    <div class="upzone" id="upzone">
+      <input type="file" id="fileInput" accept=".psd,.png,.jpg,.jpeg">
+      <div class="uz-icon">📂</div>
+      <p><strong>点击上传</strong>或拖入文件</p>
+      <p style="margin-top:2px;font-size:10px;">.psd · .png · .jpg</p>
+    </div>
+    <div id="alertMain" class="alert alert-warn"></div>
   </div>
 
-  <div class="sidebar-body">
-    <!-- Upload -->
-    <div class="section-title">源文件</div>
-    <div class="upload-zone" id="uploadZone">
-      <input type="file" id="fileInput" accept=".psd,.png,.jpg,.jpeg,.webp">
-      <div class="icon">📁</div>
-      <p><strong>点击上传</strong> 或拖拽文件至此</p>
-      <p>.psd / .png / .jpg</p>
-    </div>
-    <div id="alertBox" class="alert alert-warn"></div>
-
-    <!-- PSD Layers -->
-    <div id="layerSection" style="display:none;">
-      <div class="section-title" style="margin-top:12px;">图层 <span id="layerCount" style="color:var(--text2);font-weight:400;"></span></div>
-      <div id="layerList" class="layer-list"></div>
-    </div>
-
-    <!-- Output Sizes -->
-    <div class="section-title" style="margin-top:12px;">输出尺寸</div>
-    <div id="sizeList" class="size-list"></div>
-
-    <button class="btn btn-sm" id="addSizeBtn" style="margin-top:6px; width:100%; justify-content:center;">＋ 新增尺寸</button>
-    <div class="add-size-form" id="addSizeForm">
-      <div class="form-row">
-        <input type="text" id="newSizeName" placeholder="名称，如：首页 banner">
+  <!-- Sizes -->
+  <div class="sb-section" style="flex:1;overflow-y:auto;overflow-x:hidden">
+    <div class="sb-title">输出尺寸</div>
+    <div id="sizeList"></div>
+    <button class="btn btn-ghost btn-sm btn-full" id="addSizeBtn" style="margin-top:4px">＋ 新增尺寸</button>
+    <div class="add-form" id="addForm">
+      <div class="af-row"><input id="afName" placeholder="名称"></div>
+      <div class="af-row">
+        <input id="afW" type="number" placeholder="宽 px">
+        <input id="afH" type="number" placeholder="高 px">
       </div>
-      <div class="form-row">
-        <input type="number" id="newSizeW" placeholder="宽 px" min="1">
-        <input type="number" id="newSizeH" placeholder="高 px" min="1">
-      </div>
-      <div class="form-row">
-        <button class="btn btn-sm btn-primary" id="confirmAddSize">添加</button>
-        <button class="btn btn-sm" id="cancelAddSize">取消</button>
+      <div class="af-row">
+        <button class="btn btn-sm btn-primary" id="afConfirm">添加</button>
+        <button class="btn btn-sm" id="afCancel">取消</button>
       </div>
     </div>
   </div>
 
-  <div class="sidebar-footer">
-    <button class="btn btn-primary btn-full" id="generateBtn">⚡ 生成勾选尺寸</button>
-    <button class="btn btn-full btn-sm" id="downloadAllBtn" style="display:none;">⬇ 全部下载</button>
+  <!-- Generate footer -->
+  <div class="sb-section">
+    <div id="sbStatus" style="font-size:11px;color:var(--text3);margin-bottom:6px">等待上传源文件</div>
+    <button class="btn btn-full btn-sm" id="dlAllBtn" style="display:none">⬇ 全部下载</button>
   </div>
 </div>
 
-<!-- Main -->
+<!-- ══ Main ══ -->
 <div class="main">
-  <div class="topbar">
-    <div class="tabs">
-      <button class="tab active" data-tab="editor">区域定义</button>
-      <button class="tab" data-tab="results">生成结果</button>
+<div class="workspace">
+
+  <!-- Step 1: Layer roles -->
+  <div class="pane active" id="pane1">
+    <div class="empty" id="s1empty">
+      <div class="ei">🎨</div>
+      <p>上传 PSD 或图片后<br>在这里给每个图层指定角色<br>背景 · 主产品 · 标题文字 · 装饰</p>
     </div>
-    <div style="flex:1;"></div>
-    <span style="font-size:12px;color:var(--text3);" id="activeHint">选择一个输出尺寸后开始框选</span>
+    <div id="s1content" style="display:none">
+      <div class="role-guide">
+        <p>为每个图层指定角色，生成时将按角色规则合成到各尺寸</p>
+        <div class="role-tags" style="margin-top:6px">
+          <span class="role-tag rt-bg">BG 背景</span>
+          <span style="font-size:11px;color:var(--text3)">等比+居中裁切填满</span>
+          <span class="role-tag rt-product">主产品</span>
+          <span style="font-size:11px;color:var(--text3)">等比cover进产品框（对齐点可设）</span>
+          <span class="role-tag rt-title">标题文字</span>
+          <span style="font-size:11px;color:var(--text3)">按文字框宽等比缩放</span>
+          <span class="role-tag rt-deco">装饰</span>
+          <span style="font-size:11px;color:var(--text3)">按比例跟随</span>
+        </div>
+      </div>
+      <div id="layerRoleList"></div>
+
+      <!-- Composite preview -->
+      <div style="margin-top:16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden">
+        <div style="padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)">合成预览</div>
+        <div style="padding:12px;display:flex;align-items:center;justify-content:center;background:#111;min-height:120px">
+          <canvas id="previewCanvas" style="max-width:100%;max-height:300px;border-radius:4px"></canvas>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;justify-content:flex-end">
+        <button class="btn btn-primary" onclick="goStep(2)">下一步：配置各尺寸 →</button>
+      </div>
+    </div>
   </div>
 
-  <div class="workspace">
-    <!-- Editor pane -->
-    <div class="pane active" id="pane-editor">
-      <div id="emptyEditorState" class="empty-state">
-        <div class="empty-icon">🖼</div>
-        <p>上传 PSD 或图片后，在左侧选择一个输出尺寸<br>然后在画面上框选主视觉区域和文字区域</p>
+  <!-- Step 2: Size config -->
+  <div class="pane" id="pane2">
+    <div class="empty" id="s2empty">
+      <div class="ei">📐</div>
+      <p>在左侧选择一个尺寸<br>上传该尺寸的 demo 参考图<br>然后框选各区域</p>
+    </div>
+    <div id="s2content" style="display:none">
+      <div style="font-size:13px;font-weight:600;margin-bottom:14px;color:var(--text2)">
+        配置：<span id="s2SizeName" style="color:var(--text)"></span>
+        <span id="s2SizeDim" style="font-size:11px;color:var(--text3);margin-left:6px"></span>
       </div>
-      <div id="editorContent" style="display:none;">
-        <div class="canvas-wrap">
-          <div style="flex:1;">
-            <div class="canvas-panel">
-              <div class="canvas-panel-header">
-                <span id="canvasPanelTitle">主视图</span>
-                <span style="flex:1;"></span>
-                <span id="canvasScaleInfo" style="font-size:11px;color:var(--text3);"></span>
-              </div>
-              <div class="canvas-panel-body" id="canvasPanelBody">
-                <div class="canvas-container" id="canvasContainer">
-                  <canvas id="mainCanvas"></canvas>
-                </div>
-              </div>
+      <div class="size-config-wrap">
+        <!-- Demo panel -->
+        <div class="demo-panel">
+          <div class="demo-panel-header">
+            <span id="demoPanelTitle">参考图</span>
+            <span style="flex:1"></span>
+            <span id="demoScaleInfo" style="font-size:10px"></span>
+            <button class="btn btn-ghost btn-sm" id="changeDemoBtn" style="padding:2px 8px;font-size:11px">更换</button>
+            <input type="file" id="demoFileInput" accept=".png,.jpg,.jpeg" style="display:none">
+          </div>
+          <div class="demo-panel-body" id="demoPanelBody">
+            <!-- upload prompt or canvas -->
+            <div class="demo-upzone" id="demoUpzone">
+              <input type="file" id="demoUpzoneInput" accept=".png,.jpg,.jpeg">
+              <div style="font-size:24px;opacity:.3">🖼</div>
+              <p>上传此尺寸的 demo 参考图</p>
+              <p style="font-size:10px;color:var(--text3)">jpg / png 标注图</p>
+            </div>
+            <div class="canvas-wrap" id="canvasWrap" style="display:none">
+              <canvas id="demoCanvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zone panel -->
+        <div class="zone-panel">
+          <div class="zp-title">区域定义</div>
+          <div class="zp-hint">在参考图上拖拽框选区域，然后设置类型并保存</div>
+
+          <div class="type-btns">
+            <div class="type-btn tb-product on" data-type="product">主产品</div>
+            <div class="type-btn tb-title" data-type="title">文字区</div>
+            <div class="type-btn tb-bg" data-type="bg">背景</div>
+            <div class="type-btn tb-safe" data-type="safe">安全区</div>
+          </div>
+
+          <div class="field">
+            <label>区域名称</label>
+            <input type="text" id="zoneName" placeholder="可选，留空自动命名">
+          </div>
+
+          <div class="coords-grid">
+            <div class="field"><label>X</label><input type="number" id="zX" readonly></div>
+            <div class="field"><label>Y</label><input type="number" id="zY" readonly></div>
+            <div class="field"><label>宽</label><input type="number" id="zW" readonly></div>
+            <div class="field"><label>高</label><input type="number" id="zH" readonly></div>
+          </div>
+
+          <!-- Align picker (product only) -->
+          <div id="alignSection">
+            <div class="field" style="margin-bottom:4px"><label>产品对齐点</label></div>
+            <div class="align-picker" id="alignPicker">
+              <div class="align-btn on" data-ax="left" data-ay="top">↖</div>
+              <div class="align-btn" data-ax="center" data-ay="top">↑</div>
+              <div class="align-btn" data-ax="right" data-ay="top">↗</div>
+              <div class="align-btn" data-ax="left" data-ay="center">←</div>
+              <div class="align-btn on" data-ax="center" data-ay="center">·</div>
+              <div class="align-btn" data-ax="right" data-ay="center">→</div>
+              <div class="align-btn" data-ax="left" data-ay="bottom">↙</div>
+              <div class="align-btn" data-ax="center" data-ay="bottom">↓</div>
+              <div class="align-btn" data-ax="right" data-ay="bottom">↘</div>
             </div>
           </div>
 
-          <!-- Zone editor -->
-          <div class="zone-editor">
-            <h3>区域定义</h3>
+          <button class="btn btn-primary btn-full btn-sm" id="addZoneBtn" style="margin-top:10px">＋ 保存区域</button>
+          <button class="btn btn-full btn-sm btn-ghost" id="clearSelBtn">清除选框</button>
 
-            <div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.6;">
-              在画面上拖拽框选，然后设置该区域的用途
-            </div>
-
-            <div class="zone-type-btns">
-              <div class="zone-type-btn active-visual" id="zoneTypeVisual" data-type="visual">主视觉</div>
-              <div class="zone-type-btn" id="zoneTypeText" data-type="text">文字区</div>
-              <div class="zone-type-btn" id="zoneTypeSafe" data-type="safe">安全区</div>
-            </div>
-
-            <div class="zone-field">
-              <label>区域名称</label>
-              <input type="text" id="zoneName" placeholder="如：商品主图">
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-              <div class="zone-field">
-                <label>X (px)</label>
-                <input type="number" id="zoneX" readonly>
-              </div>
-              <div class="zone-field">
-                <label>Y (px)</label>
-                <input type="number" id="zoneY" readonly>
-              </div>
-              <div class="zone-field">
-                <label>宽 (px)</label>
-                <input type="number" id="zoneW" readonly>
-              </div>
-              <div class="zone-field">
-                <label>高 (px)</label>
-                <input type="number" id="zoneH" readonly>
-              </div>
-            </div>
-
-            <button class="btn btn-primary btn-full" id="addZoneBtn" style="margin-top:8px;">＋ 保存此区域</button>
-            <button class="btn btn-full btn-sm" id="clearSelBtn" style="margin-top:4px;">清除选框</button>
-
-            <!-- Zones for current size -->
-            <div class="zones-list" id="zonesList">
-              <div class="zones-list-title">当前尺寸的区域</div>
-              <div id="zonesListBody"></div>
-            </div>
-
-            <!-- Layer assignment (PSD only) -->
-            <div class="layer-assign" id="layerAssignSection" style="display:none;">
-              <div class="layer-assign-title">图层分配（PSD）</div>
-              <div class="layer-assign-row">
-                <span style="color:var(--accent2);font-size:11px;width:48px;">主视觉</span>
-                <select id="layerForVisual"><option value="">-- 选择图层 --</option></select>
-              </div>
-              <div class="layer-assign-row">
-                <span style="color:var(--warn);font-size:11px;width:48px;">文字组</span>
-                <select id="layerForText"><option value="">-- 选择图层 --</option></select>
-              </div>
-              <div class="layer-assign-row">
-                <span style="color:var(--text2);font-size:11px;width:48px;">背景层</span>
-                <select id="layerForBg"><option value="">-- 选择图层 --</option></select>
-              </div>
-            </div>
+          <div class="zone-list" id="zoneList">
+            <div class="zl-title">已定义区域</div>
+            <div id="zoneListBody"></div>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Results pane -->
-    <div class="pane" id="pane-results">
-      <div id="emptyResultState" class="empty-state">
-        <div class="empty-icon">⚡</div>
-        <p>还没有生成结果<br>返回「区域定义」配置好各尺寸后点击生成</p>
-      </div>
-      <div id="resultsContent" style="display:none;">
-        <div class="results-grid" id="resultsGrid"></div>
-      </div>
+  <!-- Step 3: Results -->
+  <div class="pane" id="pane3">
+    <div class="empty" id="s3empty">
+      <div class="ei">⚡</div>
+      <p>配置好各尺寸后<br>点击顶部「生成所有尺寸」</p>
+    </div>
+    <div id="s3content" style="display:none">
+      <div class="results-grid" id="resultsGrid"></div>
     </div>
   </div>
 
-  <div class="statusbar">
-    <span><span class="status-dot" id="statusDot"></span><span id="statusText">等待上传</span></span>
-    <span id="statusExtra"></span>
-  </div>
-</div>
+</div><!-- /workspace -->
 
+<div class="statusbar">
+  <span id="stDot" class="dot-idle"></span>
+  <span id="stText">等待上传</span>
+  <span style="flex:1"></span>
+  <span id="stExtra"></span>
 </div>
+</div><!-- /main -->
+</div><!-- /app -->
 
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
-const state = {
-  psd: null,
-  layers: [],          // {name, type, canvas, x, y, w, h}
-  compositeCanvas: null,  // full composite
-  sizes: [],           // {id, name, w, h, checked, zones:[], layerMap:{}}
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+const S = {
+  src: null,           // {canvas, w, h}
+  layers: [],          // [{id,name,role,canvas,x,y,w,h,visible}]
+  sizes: [],
   activeSize: null,
-  currentDraw: null,   // {x,y,w,h} in image coords
-  activeZone: null,    // selected zone tag
-  drawingType: 'visual',
-  scale: 1,
-  results: [],         // {sizeId, canvas}
+  drawType: 'product',
+  alignX: 'center',
+  alignY: 'center',
+  drawing: false,
+  dragStart: null,
+  curSel: null,        // {x,y,w,h} in demo image coords
+  demoScale: 1,
+  results: [],
 };
 
 const DEFAULT_SIZES = [
-  { id: uid(), name: '首页 Banner', w: 750, h: 360, checked: true, zones: [], layerMap: {} },
-  { id: uid(), name: '频道入口 2:1', w: 375, h: 188, checked: true, zones: [], layerMap: {} },
-  { id: uid(), name: '方形入口', w: 375, h: 375, checked: false, zones: [], layerMap: {} },
-  { id: uid(), name: '竖版入口 3:4', w: 375, h: 500, checked: false, zones: [], layerMap: {} },
+  {name:'首页 Banner',w:750,h:360},
+  {name:'频道入口 2:1',w:375,h:188},
+  {name:'方形入口',w:375,h:375},
+  {name:'竖版 3:4',w:375,h:500},
+].map(s=>({...s,id:uid(),checked:true,demoImg:null,zones:[],layerMap:{bg:null,product:null,title:null}}));
+
+S.sizes = DEFAULT_SIZES;
+
+const $ = id => document.getElementById(id);
+function uid(){ return Math.random().toString(36).slice(2,8) }
+
+// ═══════════════════════════════════════════════════════
+// UPLOAD SOURCE
+// ═══════════════════════════════════════════════════════
+const upzone = $('upzone'), fileInput = $('fileInput');
+upzone.addEventListener('click',()=>fileInput.click());
+fileInput.addEventListener('change',e=>handleSrc(e.target.files[0]));
+upzone.addEventListener('dragover',e=>{e.preventDefault();upzone.classList.add('over')});
+upzone.addEventListener('dragleave',()=>upzone.classList.remove('over'));
+upzone.addEventListener('drop',e=>{e.preventDefault();upzone.classList.remove('over');handleSrc(e.dataTransfer.files[0])});
+
+async function handleSrc(file){
+  if(!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  setSt('解析中…');
+  if(ext==='psd') await loadPSD(file);
+  else if(['png','jpg','jpeg'].includes(ext)) await loadImgFile(file);
+  else showAlert('请上传 .psd / .png / .jpg 文件','alertMain');
+}
+
+async function loadImgFile(file){
+  const url = URL.createObjectURL(file);
+  const img = await imgFromUrl(url);
+  const c = toCanvas(img);
+  S.src = {canvas:c, w:img.naturalWidth, h:img.naturalHeight};
+  S.layers = [{id:uid(),name:file.name,role:'none',canvas:c,x:0,y:0,w:c.width,h:c.height}];
+  onSrcLoaded();
+  setSt(`图片已加载 ${c.width}×${c.height}`,true);
+}
+
+async function loadPSD(file){
+  try{
+    if(!window.PSD){ showAlert('PSD库加载中，稍后重试','alertMain'); return; }
+    const buf = await file.arrayBuffer();
+    const psd = await PSD.fromArrayBuffer(buf);
+    await psd.parse();
+    // composite
+    const comp = psd.image.toPng();
+    S.src = {canvas:comp, w:psd.header.width, h:psd.header.height};
+    // layers
+    S.layers = [];
+    function walk(node){
+      if(node.isRoot()){ node.children().forEach(walk); return; }
+      try{
+        const lc = node.toPng ? node.toPng() : null;
+        const info = node.export ? node.export() : {};
+        S.layers.push({
+          id: uid(),
+          name: node.name||('layer'+S.layers.length),
+          role: 'none',
+          canvas: lc,
+          x: info.left||0, y: info.top||0,
+          w: info.width||0, h: info.height||0,
+        });
+      }catch(e){}
+      if(node.hasChildren()) node.children().forEach(walk);
+    }
+    walk(psd.tree());
+    // reverse so bottom layers are first (PSD order)
+    S.layers.reverse();
+    onSrcLoaded();
+    setSt(`PSD已解析，${S.layers.length}个图层，${S.src.w}×${S.src.h}`,true);
+  }catch(e){
+    console.error(e);
+    showAlert('PSD解析失败：'+e.message+'。请改用导出的PNG','alertMain');
+    setSt('解析失败');
+  }
+}
+
+function onSrcLoaded(){
+  renderLayerRoles();
+  drawCompositePreview();
+  renderSizes();
+  $('s1empty').style.display='none';
+  $('s1content').style.display='block';
+}
+
+// ═══════════════════════════════════════════════════════
+// STEP 1 — Layer roles
+// ═══════════════════════════════════════════════════════
+const ROLES = [
+  {v:'none',  label:'忽略'},
+  {v:'bg',    label:'背景'},
+  {v:'product',label:'主产品'},
+  {v:'title', label:'标题文字'},
+  {v:'deco',  label:'装饰'},
 ];
 
-function uid() { return Math.random().toString(36).slice(2, 8); }
+function renderLayerRoles(){
+  const el = $('layerRoleList');
+  el.innerHTML='';
+  S.layers.forEach(l=>{
+    const row = document.createElement('div');
+    row.className = 'layer-item role-'+l.role;
+    row.id = 'lr-'+l.id;
 
-// ─── DOM refs ────────────────────────────────────────────────────────────────
-const $ = id => document.getElementById(id);
-const uploadZone = $('uploadZone');
-const fileInput = $('fileInput');
-const layerList = $('layerList');
-const sizeList = $('sizeList');
-const mainCanvas = $('mainCanvas');
-const ctx = mainCanvas.getContext('2d');
-const canvasContainer = $('canvasContainer');
-
-// ─── Init ────────────────────────────────────────────────────────────────────
-state.sizes = DEFAULT_SIZES.map(s => ({ ...s, zones: [], layerMap: {} }));
-renderSizes();
-
-// ─── Upload ──────────────────────────────────────────────────────────────────
-uploadZone.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
-uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
-uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
-
-async function handleFile(file) {
-  if (!file) return;
-  const ext = file.name.split('.').pop().toLowerCase();
-  setStatus('解析中…', false);
-
-  if (ext === 'psd') {
-    await loadPSD(file);
-  } else if (['png','jpg','jpeg','webp'].includes(ext)) {
-    await loadImage(file);
-  } else {
-    showAlert('不支持的格式，请上传 .psd / .png / .jpg 文件');
-  }
-}
-
-async function loadImage(file) {
-  return new Promise(resolve => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      c.width = img.width; c.height = img.height;
-      c.getContext('2d').drawImage(img, 0, 0);
-      state.compositeCanvas = c;
-      state.layers = [{ name: file.name, type: 'image', canvas: c, x: 0, y: 0, w: img.width, h: img.height }];
-      $('layerSection').style.display = 'none';
-      onSourceLoaded();
-      setStatus(`图片已加载 ${img.width}×${img.height}px`, true);
-      resolve();
-    };
-    img.src = url;
-  });
-}
-
-async function loadPSD(file) {
-  try {
-    if (!window.PSD) { showAlert('PSD 解析库加载中，请稍候重试…'); return; }
-    const buffer = await file.arrayBuffer();
-    const psd = await PSD.fromArrayBuffer(buffer);
-    await psd.parse();
-    state.psd = psd;
-
-    const composite = psd.image.toPng();
-    state.compositeCanvas = composite;
-
-    // Extract layers
-    state.layers = [];
-    function extractLayers(node, depth = 0) {
-      if (node.isRoot()) {
-        node.children().forEach(c => extractLayers(c, depth));
-        return;
-      }
-      if (node.layer && node.layer.image) {
-        try {
-          const lc = node.toPng ? node.toPng() : null;
-          state.layers.push({
-            name: node.name || ('Layer ' + state.layers.length),
-            type: node.type || 'pixel',
-            canvas: lc,
-            x: node.layer.left,
-            y: node.layer.top,
-            w: node.width ? node.width() : 0,
-            h: node.height ? node.height() : 0,
-          });
-        } catch(e) {}
-      }
-      if (node.hasChildren()) node.children().forEach(c => extractLayers(c, depth + 1));
-    }
-    extractLayers(psd.tree());
-
-    renderLayers();
-    $('layerSection').style.display = 'block';
-    $('layerCount').textContent = `(${state.layers.length})`;
-    $('layerAssignSection').style.display = 'block';
-    updateLayerSelects();
-    onSourceLoaded();
-    setStatus(`PSD 已解析，${state.layers.length} 个图层，${psd.header.width}×${psd.header.height}px`, true);
-  } catch(e) {
-    console.error(e);
-    showAlert('PSD 解析失败：' + e.message + '。可改用导出的 PNG/JPG。');
-    setStatus('解析失败', false);
-  }
-}
-
-function onSourceLoaded() {
-  $('emptyEditorState').style.display = 'none';
-  $('editorContent').style.display = 'block';
-  drawComposite();
-  if (state.sizes.length > 0 && !state.activeSize) {
-    activateSize(state.sizes[0]);
-  }
-}
-
-// ─── Draw composite ──────────────────────────────────────────────────────────
-function drawComposite() {
-  const src = state.compositeCanvas;
-  if (!src) return;
-  const maxW = $('canvasPanelBody').clientWidth - 32 || 600;
-  const maxH = 520;
-  const scaleW = maxW / src.width;
-  const scaleH = maxH / src.height;
-  state.scale = Math.min(1, scaleW, scaleH);
-
-  mainCanvas.width = Math.round(src.width * state.scale);
-  mainCanvas.height = Math.round(src.height * state.scale);
-  ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-
-  // Checker pattern for transparency
-  const checker = createCheckerPattern();
-  ctx.fillStyle = ctx.createPattern(checker, 'repeat');
-  ctx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
-
-  ctx.drawImage(src, 0, 0, mainCanvas.width, mainCanvas.height);
-  $('canvasScaleInfo').textContent = `${src.width}×${src.height}  |  显示 ${Math.round(state.scale * 100)}%`;
-
-  drawZoneOverlays();
-  drawCurrentSelection();
-}
-
-function createCheckerPattern() {
-  const c = document.createElement('canvas');
-  c.width = 16; c.height = 16;
-  const cx = c.getContext('2d');
-  cx.fillStyle = '#2a2a2a'; cx.fillRect(0,0,16,16);
-  cx.fillStyle = '#222'; cx.fillRect(0,0,8,8); cx.fillRect(8,8,8,8);
-  return c;
-}
-
-// ─── Zone overlays ───────────────────────────────────────────────────────────
-function drawZoneOverlays() {
-  if (!state.activeSize) return;
-  const s = state.scale;
-  // Remove old overlays
-  canvasContainer.querySelectorAll('.zone-badge,.selection-rect').forEach(el => {
-    if (!el.classList.contains('current-sel')) el.remove();
-  });
-
-  state.activeSize.zones.forEach(z => {
-    const colors = { visual: 'rgba(124,111,239,0.2)', text: 'rgba(240,160,48,0.2)', safe: 'rgba(62,207,142,0.1)' };
-    const borders = { visual: '#7c6fef', text: '#f0a030', safe: '#3ecf8e' };
-    const div = document.createElement('div');
-    div.style.cssText = `position:absolute;left:${z.x*s}px;top:${z.y*s}px;width:${z.w*s}px;height:${z.h*s}px;border:2px solid ${borders[z.type]};background:${colors[z.type]};pointer-events:none;`;
-    div.dataset.zoneId = z.id;
-
-    const label = document.createElement('div');
-    label.className = 'zone-badge zone-' + z.type;
-    label.textContent = z.name;
-    label.style.cssText = `position:absolute;top:-1px;left:-1px;`;
-    div.appendChild(label);
-    canvasContainer.appendChild(div);
-  });
-}
-
-// ─── Mouse drawing ───────────────────────────────────────────────────────────
-let isDragging = false;
-let dragStart = { x: 0, y: 0 };
-
-canvasContainer.addEventListener('mousedown', e => {
-  if (!state.compositeCanvas) return;
-  isDragging = true;
-  const rect = mainCanvas.getBoundingClientRect();
-  dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  state.currentDraw = null;
-  clearCurrentSel();
-});
-
-canvasContainer.addEventListener('mousemove', e => {
-  if (!isDragging) return;
-  const rect = mainCanvas.getBoundingClientRect();
-  const ex = e.clientX - rect.left;
-  const ey = e.clientY - rect.top;
-  const x = Math.min(dragStart.x, ex);
-  const y = Math.min(dragStart.y, ey);
-  const w = Math.abs(ex - dragStart.x);
-  const h = Math.abs(ey - dragStart.y);
-  const s = state.scale;
-
-  state.currentDraw = {
-    x: Math.round(x / s), y: Math.round(y / s),
-    w: Math.round(w / s), h: Math.round(h / s),
-  };
-
-  updateCurrentSelUI(x, y, w, h);
-  updateZoneFields();
-});
-
-canvasContainer.addEventListener('mouseup', () => { isDragging = false; });
-canvasContainer.addEventListener('mouseleave', () => { isDragging = false; });
-
-let currentSelEl = null;
-function clearCurrentSel() {
-  if (currentSelEl) { currentSelEl.remove(); currentSelEl = null; }
-}
-
-function updateCurrentSelUI(x, y, w, h) {
-  if (!currentSelEl) {
-    currentSelEl = document.createElement('div');
-    currentSelEl.className = 'current-sel';
-    currentSelEl.style.cssText = `position:absolute;border:2px dashed rgba(255,255,255,0.7);background:rgba(255,255,255,0.06);pointer-events:none;`;
-    canvasContainer.appendChild(currentSelEl);
-  }
-  currentSelEl.style.left = x + 'px';
-  currentSelEl.style.top = y + 'px';
-  currentSelEl.style.width = w + 'px';
-  currentSelEl.style.height = h + 'px';
-}
-
-function updateZoneFields() {
-  const d = state.currentDraw;
-  if (!d) return;
-  $('zoneX').value = d.x;
-  $('zoneY').value = d.y;
-  $('zoneW').value = d.w;
-  $('zoneH').value = d.h;
-}
-
-$('clearSelBtn').addEventListener('click', () => {
-  state.currentDraw = null;
-  clearCurrentSel();
-  ['zoneX','zoneY','zoneW','zoneH'].forEach(id => $(id).value = '');
-});
-
-// ─── Zone type selection ──────────────────────────────────────────────────────
-let activeZoneType = 'visual';
-document.querySelectorAll('.zone-type-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    activeZoneType = btn.dataset.type;
-    document.querySelectorAll('.zone-type-btn').forEach(b => {
-      b.className = 'zone-type-btn';
-    });
-    btn.classList.add('active-' + activeZoneType);
-  });
-});
-
-// ─── Add zone ─────────────────────────────────────────────────────────────────
-$('addZoneBtn').addEventListener('click', () => {
-  if (!state.activeSize) { showAlert('请先在左侧选择一个输出尺寸'); return; }
-  const d = state.currentDraw;
-  if (!d || d.w < 4 || d.h < 4) { showAlert('请先在画面上拖拽框选区域'); return; }
-  const name = $('zoneName').value.trim() || { visual:'主视觉', text:'文字区', safe:'安全区' }[activeZoneType];
-  const zone = { id: uid(), type: activeZoneType, name, x: d.x, y: d.y, w: d.w, h: d.h };
-  state.activeSize.zones.push(zone);
-  clearCurrentSel();
-  state.currentDraw = null;
-  $('zoneName').value = '';
-  renderZonesList();
-  renderSizes();
-  drawZoneOverlays();
-});
-
-// ─── Zones list ───────────────────────────────────────────────────────────────
-function renderZonesList() {
-  const body = $('zonesListBody');
-  body.innerHTML = '';
-  if (!state.activeSize) return;
-  state.activeSize.zones.forEach(z => {
-    const tag = document.createElement('div');
-    tag.className = 'zone-tag';
-    tag.dataset.zid = z.id;
-    tag.innerHTML = `
-      <div class="dot dot-${z.type}"></div>
-      <span class="ztname">${z.name}</span>
-      <span style="font-size:10px;color:var(--text3);">${z.w}×${z.h}</span>
-      <span class="zdel" title="删除">×</span>
-    `;
-    tag.querySelector('.zdel').addEventListener('click', e => {
-      e.stopPropagation();
-      state.activeSize.zones = state.activeSize.zones.filter(zz => zz.id !== z.id);
-      renderZonesList(); renderSizes(); drawComposite();
-    });
-    body.appendChild(tag);
-  });
-}
-
-// ─── Sizes ───────────────────────────────────────────────────────────────────
-function renderSizes() {
-  sizeList.innerHTML = '';
-  state.sizes.forEach(sz => {
-    const card = document.createElement('div');
-    card.className = 'size-card' + (state.activeSize && state.activeSize.id === sz.id ? ' active' : '') + (sz.zones.length > 0 ? ' has-zone' : '');
-    card.innerHTML = `
-      <div class="size-card-header">
-        <input type="checkbox" class="size-check" ${sz.checked ? 'checked' : ''}>
-        <span class="size-name">${sz.name}</span>
-        <span class="size-dim">${sz.w}×${sz.h}</span>
-      </div>
-      ${sz.zones.length > 0 ? `<div class="size-zone-info">${sz.zones.length} 个区域已定义</div>` : ''}
-    `;
-    card.querySelector('.size-check').addEventListener('change', e => {
-      sz.checked = e.target.checked;
-      e.stopPropagation();
-    });
-    card.addEventListener('click', e => {
-      if (e.target.classList.contains('size-check')) return;
-      activateSize(sz);
-    });
-    sizeList.appendChild(card);
-  });
-}
-
-function activateSize(sz) {
-  state.activeSize = sz;
-  $('activeHint').textContent = `当前：${sz.name}（${sz.w}×${sz.h}）· 拖拽框选区域`;
-  $('canvasPanelTitle').textContent = `主视图 → ${sz.name}`;
-  clearCurrentSel();
-  state.currentDraw = null;
-  renderSizes();
-  renderZonesList();
-  drawComposite();
-  if (state.layers.length > 0) updateLayerSelectsForSize(sz);
-}
-
-// ─── Add size form ────────────────────────────────────────────────────────────
-$('addSizeBtn').addEventListener('click', () => {
-  $('addSizeForm').classList.toggle('open');
-});
-$('cancelAddSize').addEventListener('click', () => {
-  $('addSizeForm').classList.remove('open');
-});
-$('confirmAddSize').addEventListener('click', () => {
-  const name = $('newSizeName').value.trim();
-  const w = parseInt($('newSizeW').value);
-  const h = parseInt($('newSizeH').value);
-  if (!name || !w || !h) { showAlert('请填写名称和尺寸'); return; }
-  state.sizes.push({ id: uid(), name, w, h, checked: true, zones: [], layerMap: {} });
-  $('addSizeForm').classList.remove('open');
-  $('newSizeName').value = ''; $('newSizeW').value = ''; $('newSizeH').value = '';
-  renderSizes();
-});
-
-// ─── Layer rendering ──────────────────────────────────────────────────────────
-function renderLayers() {
-  layerList.innerHTML = '';
-  state.layers.forEach((l, i) => {
-    const item = document.createElement('div');
-    item.className = 'layer-item';
     const thumb = document.createElement('div');
-    thumb.className = 'layer-thumb';
-    if (l.canvas) {
-      const tc = document.createElement('canvas');
-      tc.width = 28; tc.height = 28;
-      tc.getContext('2d').drawImage(l.canvas, l.x, l.y, l.w, l.h, 0, 0, 28, 28);
+    thumb.className='li-thumb';
+    if(l.canvas){
+      const tc=document.createElement('canvas');
+      tc.width=32;tc.height=32;
+      const tcx=tc.getContext('2d');
+      // checker
+      tcx.fillStyle='#2a2a2a';tcx.fillRect(0,0,32,32);
+      const sc=Math.min(32/Math.max(l.w||1,1),32/Math.max(l.h||1,1));
+      const ox=(32-l.w*sc)/2,oy=(32-l.h*sc)/2;
+      if(l.canvas.width>0) tcx.drawImage(l.canvas,l.x||0,l.y||0,l.w||l.canvas.width,l.h||l.canvas.height,ox,oy,l.w*sc,l.h*sc);
       thumb.appendChild(tc);
     }
-    item.innerHTML = `<span class="layer-name" title="${l.name}">${l.name}</span><span class="layer-type">${l.type}</span>`;
-    item.prepend(thumb);
-    layerList.appendChild(item);
+
+    const sel=document.createElement('select');
+    sel.className='role-sel';
+    ROLES.forEach(r=>{
+      const o=document.createElement('option');
+      o.value=r.v; o.textContent=r.label;
+      if(r.v===l.role) o.selected=true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change',e=>{
+      l.role=e.target.value;
+      row.className='layer-item role-'+l.role;
+    });
+
+    const name=document.createElement('span');
+    name.className='li-name';
+    name.title=l.name;
+    name.textContent=l.name;
+
+    row.appendChild(thumb);
+    row.appendChild(name);
+    row.appendChild(sel);
+    el.appendChild(row);
   });
 }
 
-function updateLayerSelects() {
-  const opts = '<option value="">-- 不使用 --</option>' +
-    state.layers.map((l,i) => `<option value="${i}">${l.name}</option>`).join('');
-  ['layerForVisual','layerForText','layerForBg'].forEach(id => $(id).innerHTML = opts);
+function drawCompositePreview(){
+  const cv=$('previewCanvas');
+  if(!S.src) return;
+  const maxW=600,maxH=280;
+  const sc=Math.min(1,maxW/S.src.w,maxH/S.src.h);
+  cv.width=Math.round(S.src.w*sc);
+  cv.height=Math.round(S.src.h*sc);
+  cv.getContext('2d').drawImage(S.src.canvas,0,0,cv.width,cv.height);
 }
 
-function updateLayerSelectsForSize(sz) {
-  const lm = sz.layerMap || {};
-  $('layerForVisual').value = lm.visual !== undefined ? lm.visual : '';
-  $('layerForText').value   = lm.text !== undefined ? lm.text : '';
-  $('layerForBg').value     = lm.bg !== undefined ? lm.bg : '';
+// ═══════════════════════════════════════════════════════
+// SIZES
+// ═══════════════════════════════════════════════════════
+function renderSizes(){
+  const el=$('sizeList');
+  el.innerHTML='';
+  S.sizes.forEach(sz=>{
+    const row=document.createElement('div');
+    row.className='size-item'+(S.activeSize&&S.activeSize.id===sz.id?' active':'')+(sz.zones.length>0?' configured':'');
+    row.innerHTML=`
+      <input type="checkbox" class="si-check" ${sz.checked?'checked':''}>
+      <span class="si-name">${sz.name}</span>
+      <span class="si-dim">${sz.w}×${sz.h}</span>
+    `;
+    row.querySelector('.si-check').addEventListener('change',e=>{sz.checked=e.target.checked;e.stopPropagation()});
+    row.addEventListener('click',e=>{
+      if(e.target.classList.contains('si-check'))return;
+      activateSize(sz);
+      goStep(2);
+    });
+    el.appendChild(row);
+  });
 }
 
-['layerForVisual','layerForText','layerForBg'].forEach((id, i) => {
-  $(id).addEventListener('change', e => {
-    if (!state.activeSize) return;
-    const keys = ['visual','text','bg'];
-    state.activeSize.layerMap[keys[i]] = e.target.value !== '' ? parseInt(e.target.value) : undefined;
+function activateSize(sz){
+  S.activeSize=sz;
+  S.curSel=null;
+  renderSizes();
+  renderZoneList();
+  $('s2SizeName').textContent=sz.name;
+  $('s2SizeDim').textContent=sz.w+'×'+sz.h+'px';
+  $('s2empty').style.display='none';
+  $('s2content').style.display='block';
+  if(sz.demoImg){
+    loadDemoCanvas(sz.demoImg);
+  } else {
+    $('canvasWrap').style.display='none';
+    $('demoUpzone').style.display='block';
+  }
+  clearSelRect();
+}
+
+// add size
+$('addSizeBtn').addEventListener('click',()=>$('addForm').classList.toggle('open'));
+$('afCancel').addEventListener('click',()=>$('addForm').classList.remove('open'));
+$('afConfirm').addEventListener('click',()=>{
+  const name=$('afName').value.trim();
+  const w=parseInt($('afW').value),h=parseInt($('afH').value);
+  if(!name||!w||!h){showAlert('请填写名称和宽高','alertMain');return}
+  S.sizes.push({id:uid(),name,w,h,checked:true,demoImg:null,zones:[],layerMap:{bg:null,product:null,title:null}});
+  $('addForm').classList.remove('open');
+  $('afName').value='';$('afW').value='';$('afH').value='';
+  renderSizes();
+});
+
+// ═══════════════════════════════════════════════════════
+// DEMO IMAGE
+// ═══════════════════════════════════════════════════════
+function setupDemoUpload(inputEl,callback){
+  inputEl.addEventListener('change',e=>{ if(e.target.files[0]) callback(e.target.files[0]) });
+}
+function handleDemoFile(file){
+  if(!S.activeSize)return;
+  const url=URL.createObjectURL(file);
+  imgFromUrl(url).then(img=>{
+    const c=toCanvas(img);
+    S.activeSize.demoImg=c;
+    loadDemoCanvas(c);
+    renderSizes();
+  });
+}
+setupDemoUpload($('demoUpzoneInput'),handleDemoFile);
+setupDemoUpload($('demoFileInput'),handleDemoFile);
+$('demoUpzone').addEventListener('click',()=>$('demoUpzoneInput').click());
+$('changeDemoBtn').addEventListener('click',()=>$('demoFileInput').click());
+
+function loadDemoCanvas(imgCanvas){
+  $('demoUpzone').style.display='none';
+  $('canvasWrap').style.display='inline-block';
+  const body=$('demoPanelBody');
+  const maxW=body.clientWidth-32||560;
+  const maxH=500;
+  const sc=Math.min(1,maxW/imgCanvas.width,maxH/imgCanvas.height);
+  S.demoScale=sc;
+  const cv=$('demoCanvas');
+  cv.width=Math.round(imgCanvas.width*sc);
+  cv.height=Math.round(imgCanvas.height*sc);
+  const ctx=cv.getContext('2d');
+  ctx.drawImage(imgCanvas,0,0,cv.width,cv.height);
+  $('demoScaleInfo').textContent=`${imgCanvas.width}×${imgCanvas.height}  ${Math.round(sc*100)}%`;
+  redrawDemoOverlays();
+}
+
+// ═══════════════════════════════════════════════════════
+// CANVAS DRAWING
+// ═══════════════════════════════════════════════════════
+const cw=$('canvasWrap');
+let selEl=null;
+
+cw.addEventListener('mousedown',e=>{
+  if(!S.activeSize||!S.activeSize.demoImg)return;
+  S.drawing=true;
+  const r=getCanvasRect();
+  S.dragStart={x:e.clientX-r.left,y:e.clientY-r.top};
+  S.curSel=null;
+  removeSelEl();
+});
+cw.addEventListener('mousemove',e=>{
+  if(!S.drawing)return;
+  const r=getCanvasRect();
+  const ex=e.clientX-r.left,ey=e.clientY-r.top;
+  const x=Math.min(S.dragStart.x,ex),y=Math.min(S.dragStart.y,ey);
+  const w=Math.abs(ex-S.dragStart.x),h=Math.abs(ey-S.dragStart.y);
+  const sc=S.demoScale;
+  S.curSel={x:Math.round(x/sc),y:Math.round(y/sc),w:Math.round(w/sc),h:Math.round(h/sc)};
+  updateSelEl(x,y,w,h);
+  updateCoordFields();
+});
+cw.addEventListener('mouseup',()=>{S.drawing=false});
+cw.addEventListener('mouseleave',()=>{S.drawing=false});
+
+function getCanvasRect(){
+  return $('demoCanvas').getBoundingClientRect();
+}
+function removeSelEl(){
+  if(selEl){selEl.remove();selEl=null;}
+}
+function clearSelRect(){
+  removeSelEl();
+  S.curSel=null;
+  ['zX','zY','zW','zH'].forEach(id=>{$(id).value=''});
+}
+function updateSelEl(x,y,w,h){
+  if(!selEl){
+    selEl=document.createElement('div');
+    selEl.className='sel-rect';
+    cw.appendChild(selEl);
+  }
+  selEl.style.left=x+'px';selEl.style.top=y+'px';
+  selEl.style.width=w+'px';selEl.style.height=h+'px';
+}
+function updateCoordFields(){
+  const d=S.curSel;
+  if(!d)return;
+  $('zX').value=d.x;$('zY').value=d.y;$('zW').value=d.w;$('zH').value=d.h;
+}
+$('clearSelBtn').addEventListener('click',clearSelRect);
+
+// ═══════════════════════════════════════════════════════
+// ZONE TYPE & ALIGN
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.type-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    S.drawType=btn.dataset.type;
+    $('alignSection').style.display=S.drawType==='product'?'block':'none';
+  });
+});
+// default: product selected, show align
+$('alignSection').style.display='block';
+
+// Align picker — only one active at a time
+let curAlignBtn = null;
+document.querySelectorAll('.align-btn').forEach(btn=>{
+  // set default center
+  if(btn.dataset.ax==='center'&&btn.dataset.ay==='center'){ btn.classList.add('on'); curAlignBtn=btn; }
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.align-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    curAlignBtn=btn;
+    S.alignX=btn.dataset.ax;
+    S.alignY=btn.dataset.ay;
   });
 });
 
-// ─── Generate ─────────────────────────────────────────────────────────────────
-$('generateBtn').addEventListener('click', generateAll);
+// ═══════════════════════════════════════════════════════
+// ADD ZONE
+// ═══════════════════════════════════════════════════════
+$('addZoneBtn').addEventListener('click',()=>{
+  if(!S.activeSize){showAlert('请先选择一个尺寸','alertMain');return}
+  const d=S.curSel;
+  if(!d||d.w<4||d.h<4){showAlert('请先在参考图上拖拽框选区域','alertMain');return}
+  const typeNames={product:'主产品',title:'标题文字',bg:'背景',safe:'安全区'};
+  const name=$('zoneName').value.trim()||typeNames[S.drawType];
+  const zone={
+    id:uid(),type:S.drawType,name,
+    x:d.x,y:d.y,w:d.w,h:d.h,
+    alignX:S.alignX,alignY:S.alignY,
+  };
+  S.activeSize.zones.push(zone);
+  clearSelRect();
+  $('zoneName').value='';
+  renderZoneList();
+  renderSizes();
+  redrawDemoOverlays();
+});
 
-async function generateAll() {
-  if (!state.compositeCanvas) { showAlert('请先上传图片或 PSD'); return; }
-  const targets = state.sizes.filter(s => s.checked);
-  if (targets.length === 0) { showAlert('请至少勾选一个输出尺寸'); return; }
-
-  state.results = [];
-  $('resultsContent').style.display = 'none';
-  $('emptyResultState').style.display = 'flex';
-
-  for (const sz of targets) {
-    const result = await renderSize(sz);
-    state.results.push({ sizeId: sz.id, name: sz.name, w: sz.w, h: sz.h, canvas: result });
-  }
-
-  renderResults();
-  switchTab('results');
+// ═══════════════════════════════════════════════════════
+// ZONE LIST
+// ═══════════════════════════════════════════════════════
+function renderZoneList(){
+  const body=$('zoneListBody');
+  body.innerHTML='';
+  if(!S.activeSize)return;
+  S.activeSize.zones.forEach(z=>{
+    const el=document.createElement('div');
+    el.className='zt';
+    el.innerHTML=`
+      <div class="dot dot-${z.type}"></div>
+      <span class="ztn">${z.name}</span>
+      <span style="font-size:10px;color:var(--text3)">${z.w}×${z.h}</span>
+      <span class="ztd" title="删除">×</span>
+    `;
+    el.querySelector('.ztd').addEventListener('click',e=>{
+      e.stopPropagation();
+      S.activeSize.zones=S.activeSize.zones.filter(zz=>zz.id!==z.id);
+      renderZoneList();renderSizes();redrawDemoOverlays();
+    });
+    body.appendChild(el);
+  });
 }
 
-async function renderSize(sz) {
-  const out = document.createElement('canvas');
-  out.width = sz.w; out.height = sz.h;
-  const octx = out.getContext('2d');
+// ═══════════════════════════════════════════════════════
+// DEMO OVERLAYS
+// ═══════════════════════════════════════════════════════
+function redrawDemoOverlays(){
+  cw.querySelectorAll('.zone-overlay').forEach(el=>el.remove());
+  if(!S.activeSize)return;
+  const sc=S.demoScale;
+  S.activeSize.zones.forEach(z=>{
+    const div=document.createElement('div');
+    div.className=`zone-overlay zo-${z.type}`;
+    div.style.cssText=`left:${z.x*sc}px;top:${z.y*sc}px;width:${z.w*sc}px;height:${z.h*sc}px`;
+    const lbl=document.createElement('div');
+    lbl.className=`zone-label zl-${z.type}`;
+    lbl.textContent=z.name;
+    div.appendChild(lbl);
+    cw.appendChild(div);
+  });
+}
 
-  // Background fill
-  octx.fillStyle = '#ffffff';
-  octx.fillRect(0, 0, sz.w, sz.h);
+// ═══════════════════════════════════════════════════════
+// STEP NAVIGATION
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.step-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>goStep(parseInt(btn.dataset.step)));
+});
+function goStep(n){
+  document.querySelectorAll('.step-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.step)===n));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('active',p.id==='pane'+n));
+  if(n===2&&S.activeSize) activateSize(S.activeSize);
+  else if(n===2&&S.sizes.length) activateSize(S.sizes[0]);
+}
 
-  const src = state.compositeCanvas;
-  const lm = sz.layerMap || {};
+// ═══════════════════════════════════════════════════════
+// GENERATE
+// ═══════════════════════════════════════════════════════
+$('generateBtn').addEventListener('click',generate);
 
-  // Find visual zone
-  const visualZone = sz.zones.find(z => z.type === 'visual');
-  const textZone   = sz.zones.find(z => z.type === 'text');
+async function generate(){
+  if(!S.src){showAlert('请先上传源文件','alertMain');return}
+  const targets=S.sizes.filter(s=>s.checked);
+  if(!targets.length){showAlert('请至少勾选一个输出尺寸','alertMain');return}
 
-  // Source dimensions
-  const srcW = src.width, srcH = src.height;
-
-  if (visualZone && (lm.visual !== undefined || !state.psd)) {
-    // If we have a visual zone defined, place source into that zone
-    const layer = lm.visual !== undefined ? state.layers[lm.visual] : null;
-    const srcImg = (layer && layer.canvas) ? layer.canvas : src;
-    const srcX = layer ? layer.x : 0;
-    const srcY = layer ? layer.y : 0;
-    const srcLW = layer ? layer.w : srcW;
-    const srcLH = layer ? layer.h : srcH;
-
-    // Scale source to fit visual zone, maintaining aspect ratio
-    const dstX = visualZone.x * sz.w / srcW;
-    const dstY = visualZone.y * sz.h / srcH;
-    const dstW = visualZone.w * sz.w / srcW;
-    const dstH = visualZone.h * sz.h / srcH;
-
-    octx.drawImage(srcImg, srcX, srcY, srcLW, srcLH, dstX, dstY, dstW, dstH);
-  } else {
-    // No zone: smart fill - scale composite to cover output
-    const scaleX = sz.w / srcW;
-    const scaleY = sz.h / srcH;
-    const scale = Math.max(scaleX, scaleY);
-    const dw = srcW * scale, dh = srcH * scale;
-    const dx = (sz.w - dw) / 2, dy = (sz.h - dh) / 2;
-    octx.drawImage(src, dx, dy, dw, dh);
+  S.results=[];
+  setSt('生成中…');
+  for(const sz of targets){
+    const c=await renderSize(sz);
+    S.results.push({name:sz.name,w:sz.w,h:sz.h,canvas:c});
   }
+  showResults();
+  goStep(3);
+  setSt(`已生成 ${S.results.length} 张`,true);
+}
 
-  // Overlay text layer if specified
-  if (lm.text !== undefined && state.layers[lm.text]) {
-    const tl = state.layers[lm.text];
-    if (tl.canvas) {
-      const tz = textZone;
-      if (tz) {
-        const dstX = tz.x * sz.w / srcW;
-        const dstY = tz.y * sz.h / srcH;
-        const dstW = tz.w * sz.w / srcW;
-        const dstH = tz.h * sz.h / srcH;
-        octx.drawImage(tl.canvas, tl.x, tl.y, tl.w, tl.h, dstX, dstY, dstW, dstH);
-      } else {
-        octx.drawImage(tl.canvas, 0, 0, sz.w, sz.h);
-      }
+// ── Core renderer ──────────────────────────────────────
+async function renderSize(sz){
+  const out=document.createElement('canvas');
+  out.width=sz.w; out.height=sz.h;
+  const ctx=out.getContext('2d');
+
+  // 1. Background layer
+  const bgLayer = S.layers.find(l=>l.role==='bg');
+  const bgSrc = bgLayer&&bgLayer.canvas ? bgLayer.canvas : S.src.canvas;
+  drawCover(ctx, bgSrc, 0,0, sz.w, sz.h, 'center','center');
+
+  // 2. Decoration layers (behind product)
+  S.layers.filter(l=>l.role==='deco').forEach(l=>{
+    if(!l.canvas)return;
+    // scale proportionally
+    const sx=sz.w/S.src.w, sy=sz.h/S.src.h;
+    ctx.drawImage(l.canvas, l.x*sx, l.y*sy, l.w*sx, l.h*sy);
+  });
+
+  // 3. Product layer → product zone
+  const productLayer=S.layers.find(l=>l.role==='product');
+  const productZone=sz.zones.find(z=>z.type==='product');
+  if(productLayer&&productLayer.canvas){
+    if(productZone){
+      // cover into zone with specified align
+      const demoW=sz.demoImg?sz.demoImg.width:sz.w;
+      const demoH=sz.demoImg?sz.demoImg.height:sz.h;
+      const zx=productZone.x/demoW*sz.w;
+      const zy=productZone.y/demoH*sz.h;
+      const zw=productZone.w/demoW*sz.w;
+      const zh=productZone.h/demoH*sz.h;
+      drawCover(ctx, productLayer.canvas, zx,zy, zw,zh, productZone.alignX||'center', productZone.alignY||'center');
+    } else {
+      // no zone: place at proportional position
+      const sx=sz.w/S.src.w,sy=sz.h/S.src.h;
+      ctx.drawImage(productLayer.canvas, productLayer.x*sx, productLayer.y*sy, productLayer.w*sx, productLayer.h*sy);
     }
   }
 
-  // Draw zone boundaries as faint guides in output (optional — omit for clean output)
-  // (skipped for production output)
+  // 4. Title layer → title zone
+  const titleLayer=S.layers.find(l=>l.role==='title');
+  const titleZone=sz.zones.find(z=>z.type==='title');
+  if(titleLayer&&titleLayer.canvas){
+    if(titleZone){
+      const demoW=sz.demoImg?sz.demoImg.width:sz.w;
+      const demoH=sz.demoImg?sz.demoImg.height:sz.h;
+      const zx=titleZone.x/demoW*sz.w;
+      const zy=titleZone.y/demoH*sz.h;
+      const zw=titleZone.w/demoW*sz.w;
+      const zh=titleZone.h/demoH*sz.h;
+      // fit by width, align top of zone
+      const srcW=titleLayer.canvas.width||titleLayer.w||1;
+      const srcH=titleLayer.canvas.height||titleLayer.h||1;
+      const sc=Math.min(zw/srcW, zh/srcH);
+      const dw=srcW*sc, dh=srcH*sc;
+      ctx.drawImage(titleLayer.canvas, zx+(zw-dw)/2, zy, dw, dh);
+    } else {
+      const sx=sz.w/S.src.w,sy=sz.h/S.src.h;
+      ctx.drawImage(titleLayer.canvas, titleLayer.x*sx, titleLayer.y*sy, titleLayer.w*sx, titleLayer.h*sy);
+    }
+  }
 
   return out;
 }
 
-// ─── Render results ───────────────────────────────────────────────────────────
-function renderResults() {
-  const grid = $('resultsGrid');
-  grid.innerHTML = '';
+// drawCover: draw src into dst rect with cover behavior + align point
+function drawCover(ctx, src, dx,dy, dw,dh, alignX='center', alignY='center'){
+  if(!src||src.width===0) return;
+  const sw=src.width, sh=src.height;
+  const sc=Math.max(dw/sw, dh/sh);
+  const scaledW=sw*sc, scaledH=sh*sc;
 
-  state.results.forEach(r => {
-    const card = document.createElement('div');
-    card.className = 'result-card';
+  let ox=0,oy=0;
+  if(alignX==='left')   ox=0;
+  else if(alignX==='right') ox=scaledW-dw;
+  else ox=(scaledW-dw)/2;
 
-    // Thumbnail canvas
-    const maxThumb = 260;
-    const thumbScale = Math.min(1, maxThumb / r.w, maxThumb / r.h);
-    const tc = document.createElement('canvas');
-    tc.width = Math.round(r.w * thumbScale);
-    tc.height = Math.round(r.h * thumbScale);
-    tc.getContext('2d').drawImage(r.canvas, 0, 0, tc.width, tc.height);
-    tc.style.width = '100%';
+  if(alignY==='top')    oy=0;
+  else if(alignY==='bottom') oy=scaledH-dh;
+  else oy=(scaledH-dh)/2;
 
-    const footer = document.createElement('div');
-    footer.className = 'result-card-footer';
-    footer.innerHTML = `
-      <div>
-        <div class="result-card-name">${r.name}</div>
-        <div class="result-card-dim">${r.w}×${r.h}px</div>
-      </div>
-      <button class="btn btn-sm">↓ 下载</button>
-    `;
-    footer.querySelector('button').addEventListener('click', () => downloadCanvas(r.canvas, `${r.name}_${r.w}x${r.h}.png`));
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(dx,dy,dw,dh);
+  ctx.clip();
+  ctx.drawImage(src, dx-ox, dy-oy, scaledW, scaledH);
+  ctx.restore();
+}
 
-    card.appendChild(tc);
-    card.appendChild(footer);
+// ═══════════════════════════════════════════════════════
+// SHOW RESULTS
+// ═══════════════════════════════════════════════════════
+function showResults(){
+  const grid=$('resultsGrid');
+  grid.innerHTML='';
+  S.results.forEach(r=>{
+    const card=document.createElement('div');
+    card.className='res-card';
+    const maxThumb=280;
+    const sc=Math.min(1,maxThumb/r.w,maxThumb/r.h);
+    const tc=document.createElement('canvas');
+    tc.width=Math.round(r.w*sc);
+    tc.height=Math.round(r.h*sc);
+    tc.getContext('2d').drawImage(r.canvas,0,0,tc.width,tc.height);
+    tc.style.width='100%';
+    const foot=document.createElement('div');
+    foot.className='res-card-foot';
+    foot.innerHTML=`<div><div class="res-name">${r.name}</div><div class="res-dim">${r.w}×${r.h}px</div></div>`;
+    const dlBtn=document.createElement('button');
+    dlBtn.className='btn btn-sm';
+    dlBtn.textContent='↓ 下载';
+    dlBtn.addEventListener('click',()=>dlCanvas(r.canvas,`${r.name}_${r.w}x${r.h}.png`));
+    foot.appendChild(dlBtn);
+    card.appendChild(tc);card.appendChild(foot);
     grid.appendChild(card);
   });
-
-  $('emptyResultState').style.display = 'none';
-  $('resultsContent').style.display = 'block';
-  $('downloadAllBtn').style.display = 'block';
-  setStatus(`已生成 ${state.results.length} 张图片`, true);
+  $('s3empty').style.display='none';
+  $('s3content').style.display='block';
+  $('dlAllBtn').style.display='block';
 }
 
-function downloadCanvas(canvas, filename) {
-  const a = document.createElement('a');
-  a.download = filename;
-  a.href = canvas.toDataURL('image/png');
-  a.click();
+$('dlAllBtn').addEventListener('click',()=>{
+  S.results.forEach((r,i)=>setTimeout(()=>dlCanvas(r.canvas,`${r.name}_${r.w}x${r.h}.png`),i*200));
+});
+
+function dlCanvas(canvas,name){
+  const a=document.createElement('a');
+  a.download=name; a.href=canvas.toDataURL('image/png'); a.click();
 }
 
-$('downloadAllBtn').addEventListener('click', () => {
-  state.results.forEach((r, i) => {
-    setTimeout(() => downloadCanvas(r.canvas, `${r.name}_${r.w}x${r.h}.png`), i * 200);
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function toCanvas(img){
+  const c=document.createElement('canvas');
+  c.width=img.naturalWidth;c.height=img.naturalHeight;
+  c.getContext('2d').drawImage(img,0,0);
+  return c;
+}
+function imgFromUrl(url){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>res(img);
+    img.onerror=rej;
+    img.src=url;
   });
-});
-
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
-});
-
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
-  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + name));
+}
+function setSt(msg,ok=false){
+  $('stText').textContent=msg;
+  $('stDot').className=ok?'dot-ok':'dot-idle';
+}
+function showAlert(msg,id){
+  const el=$(id);
+  el.textContent=msg;
+  el.className='alert alert-warn show';
+  setTimeout(()=>el.classList.remove('show'),3000);
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function setStatus(msg, ok) {
-  $('statusText').textContent = msg;
-  $('statusDot').className = 'status-dot' + (ok ? ' ok' : '');
-}
-
-function showAlert(msg) {
-  const box = $('alertBox');
-  box.textContent = msg;
-  box.classList.add('show');
-  setTimeout(() => box.classList.remove('show'), 3500);
-}
+// init
+renderSizes();
 </script>
 </body>
 </html>
