@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>入口图生成工具 v2</title>
+<script src="./ag-psd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#16171a;--bg2:#1e1f24;--bg3:#26272e;--bg4:#2e303a;--bg5:#363840;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--border3:rgba(255,255,255,0.2);
+  --text:#e2e3e8;--text2:#9395a0;--text3:#5a5c68;
+  --accent:#6c63f5;--accent-l:#8b84f7;--accent-bg:rgba(108,99,245,0.14);
+  --green:#3ecf8e;--green-bg:rgba(62,207,142,0.12);
+  --orange:#f0a030;--orange-bg:rgba(240,160,48,0.12);
+  --blue:#4a9eff;--blue-bg:rgba(74,158,255,0.12);
+  --red:#e24b4b;--red-bg:rgba(226,75,75,0.12);
+  --r:8px;--rl:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ── Layout ── */
+.app{display:flex;flex:1;overflow:hidden}
+.sidebar{width:280px;min-width:280px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:48px;min-height:48px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:8px}
+.workspace{flex:1;overflow:auto;padding:20px}
+.statusbar{height:26px;background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:16px;font-size:11px;color:var(--text3)}
+
+/* ── Sidebar ── */
+.sb-section{padding:12px}
+.sb-section+.sb-section{border-top:1px solid var(--border)}
+.sb-title{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px}
+
+/* ── Upload zone ── */
+.upzone{border:1.5px dashed var(--border2);border-radius:var(--rl);padding:16px;text-align:center;cursor:pointer;transition:.15s;background:var(--bg3)}
+.upzone:hover,.upzone.over{border-color:var(--accent);background:var(--accent-bg)}
+.upzone input{display:none}
+.upzone .uz-icon{font-size:22px;margin-bottom:4px;opacity:.5}
+.upzone p{font-size:11px;color:var(--text2)}
+.upzone strong{color:var(--accent-l)}
+
+/* ── Layers ── */
+.layer-item{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:var(--r);cursor:pointer;margin-bottom:2px;border:1px solid transparent;transition:.1s}
+.layer-item:hover{background:var(--bg4)}
+.li-thumb{width:32px;height:32px;border-radius:4px;background:var(--bg5);border:1px solid var(--border);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.li-thumb canvas{max-width:100%;max-height:100%;object-fit:contain}
+.li-name{flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.role-sel{background:var(--bg5);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 5px;font-size:11px;cursor:pointer;flex-shrink:0}
+.role-sel option{background:var(--bg3)}
+
+/* role colors */
+.role-bg .li-name::before{content:'BG ';color:var(--blue);font-size:10px;font-weight:600}
+.role-product .li-name::before{content:'产品 ';color:var(--green);font-size:10px;font-weight:600}
+.role-title .li-name::before{content:'文字 ';color:var(--orange);font-size:10px;font-weight:600}
+.role-deco .li-name::before{content:'装饰 ';color:var(--accent-l);font-size:10px;font-weight:600}
+
+/* ── Sizes ── */
+.size-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:var(--r);cursor:pointer;border:1px solid transparent;margin-bottom:3px;transition:.1s;background:var(--bg3)}
+.size-item:hover{border-color:var(--border2)}
+.size-item.active{border-color:var(--accent);background:var(--accent-bg)}
+.size-item.configured::after{content:'✓';color:var(--green);font-size:11px;margin-left:auto}
+.si-check{accent-color:var(--accent);flex-shrink:0}
+.si-name{flex:1;font-size:12px;font-weight:500}
+.si-dim{font-size:10px;color:var(--text3)}
+
+/* ── Buttons ── */
+.btn{border:1px solid var(--border2);background:var(--bg4);color:var(--text);border-radius:var(--r);padding:6px 12px;font-size:13px;cursor:pointer;transition:.1s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn:hover{background:var(--bg5);border-color:var(--border3)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+.btn-primary:hover{background:#5a52d5}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-full{width:100%;justify-content:center}
+.btn-ghost{border-color:transparent;background:transparent;color:var(--text2)}
+.btn-ghost:hover{background:var(--bg4);color:var(--text)}
+.btn-danger{color:var(--red);border-color:rgba(226,75,75,.25)}
+.btn-danger:hover{background:var(--red-bg)}
+
+/* ── Steps ── */
+.steps{display:flex;align-items:center;gap:0;margin-right:auto}
+.step-btn{padding:5px 14px;font-size:13px;border-radius:var(--r);cursor:pointer;color:var(--text3);border:none;background:transparent;transition:.1s;position:relative}
+.step-btn.active{color:var(--accent-l);background:var(--accent-bg)}
+.step-btn .step-num{font-size:10px;font-weight:700;margin-right:4px;opacity:.6}
+
+/* ── Panes ── */
+.pane{display:none}.pane.active{display:block}
+
+/* ── Step1: Layer role assignment ── */
+.role-guide{background:var(--bg3);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:16px}
+.role-guide p{font-size:12px;color:var(--text2);line-height:1.7}
+.role-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.role-tag{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.rt-bg{background:var(--blue-bg);color:var(--blue)}
+.rt-product{background:var(--green-bg);color:var(--green)}
+.rt-title{background:var(--orange-bg);color:var(--orange)}
+.rt-deco{background:var(--accent-bg);color:var(--accent-l)}
+.rt-none{background:var(--bg4);color:var(--text3)}
+
+/* ── Step2: Size config ── */
+.size-config-wrap{display:flex;gap:20px;align-items:flex-start}
+.demo-panel{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;min-width:0}
+.demo-panel-header{padding:9px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)}
+.demo-panel-body{padding:16px;display:flex;align-items:center;justify-content:center;background:#111;min-height:260px;position:relative;overflow:hidden}
+.demo-empty{text-align:center;color:var(--text3);font-size:12px;padding:40px}
+.demo-empty .de-icon{font-size:32px;opacity:.3;margin-bottom:6px}
+
+/* canvas drawing */
+.canvas-wrap{position:relative;display:inline-block;cursor:crosshair;user-select:none}
+.canvas-wrap canvas{display:block}
+.sel-rect{position:absolute;border:2px dashed rgba(255,255,255,.7);background:rgba(255,255,255,.05);pointer-events:none}
+.zone-overlay{position:absolute;pointer-events:none;border-radius:2px}
+.zone-label{position:absolute;top:0;left:0;font-size:10px;font-weight:600;padding:2px 6px;border-radius:2px 0 4px 0;white-space:nowrap}
+.zo-bg{border:2px solid var(--blue);background:rgba(74,158,255,.1)}
+.zo-product{border:2px solid var(--green);background:rgba(62,207,142,.1)}
+.zo-title{border:2px solid var(--orange);background:rgba(240,160,48,.1)}
+.zo-safe{border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.04)}
+.zl-bg{background:var(--blue);color:#fff}
+.zl-product{background:var(--green);color:#000}
+.zl-title{background:var(--orange);color:#000}
+.zl-safe{background:rgba(255,255,255,.2);color:#fff}
+
+/* ── Zone editor panel ── */
+.zone-panel{width:220px;min-width:220px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:14px}
+.zp-title{font-size:13px;font-weight:600;margin-bottom:12px}
+.zp-hint{font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:10px;background:var(--bg3);padding:8px;border-radius:var(--r)}
+.type-btns{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+.type-btn{flex:1;min-width:0;padding:5px 4px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);color:var(--text3);cursor:pointer;text-align:center;transition:.1s;white-space:nowrap}
+.type-btn.tb-bg.on{background:var(--blue-bg);border-color:var(--blue);color:var(--blue)}
+.type-btn.tb-product.on{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.type-btn.tb-title.on{background:var(--orange-bg);border-color:var(--orange);color:var(--orange)}
+.type-btn.tb-safe.on{background:var(--bg4);border-color:var(--border3);color:var(--text)}
+
+.field{margin-bottom:8px}
+.field label{font-size:10px;color:var(--text3);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+.field input,.field select{width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12px}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+.field input[readonly]{color:var(--text2)}
+.coords-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.field select option{background:var(--bg3)}
+
+/* align picker */
+.align-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:4px}
+.align-btn{aspect-ratio:1;border:1px solid var(--border2);background:var(--bg4);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3);transition:.1s}
+.align-btn:hover{border-color:var(--border3)}
+.align-btn.on{background:var(--accent-bg);border-color:var(--accent);color:var(--accent-l)}
+
+/* zone list */
+.zone-list{margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.zl-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.zt{display:flex;align-items:center;gap:5px;padding:4px 6px;background:var(--bg3);border-radius:5px;margin-bottom:3px;font-size:11px;cursor:pointer;border:1px solid transparent}
+.zt:hover{border-color:var(--border2)}
+.zt.sel{border-color:var(--accent)}
+.zt .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-bg{background:var(--blue)}.dot-product{background:var(--green)}.dot-title{background:var(--orange)}.dot-safe{background:var(--text3)}
+.zt .ztn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zt .ztd{color:var(--text3);cursor:pointer;padding:0 2px;font-size:13px}.zt .ztd:hover{color:var(--red)}
+
+/* demo upzone inline */
+.demo-upzone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:.15s;width:100%}
+.demo-upzone:hover{border-color:var(--accent);background:var(--accent-bg)}
+.demo-upzone input{display:none}
+.demo-upzone p{font-size:11px;color:var(--text2);margin-top:4px}
+
+/* ── Results ── */
+.results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.res-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.res-card canvas{width:100%;display:block}
+.res-card-foot{padding:8px 10px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.res-name{font-size:12px;font-weight:500}.res-dim{font-size:10px;color:var(--text3)}
+
+/* ── Add size form ── */
+.add-form{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;margin-top:6px;display:none}
+.add-form.open{display:block}
+.af-row{display:flex;gap:5px;margin-bottom:5px}
+.af-row input{flex:1;background:var(--bg4);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:4px 7px;font-size:12px}
+.af-row input::placeholder{color:var(--text3)}
+
+/* ── Empty ── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center;color:var(--text3);gap:8px}
+.empty .ei{font-size:36px;opacity:.25}
+.empty p{font-size:12px;line-height:1.7}
+
+/* ── Alert ── */
+.alert{padding:7px 11px;border-radius:var(--r);font-size:12px;margin-top:6px;display:none;line-height:1.5}
+.alert.show{display:block}
+.alert-warn{background:var(--orange-bg);border:1px solid rgba(240,160,48,.3);color:var(--orange)}
+.alert-ok{background:var(--green-bg);border:1px solid rgba(62,207,142,.3);color:var(--green)}
+
+/* misc */
+.dot-ok{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block}
+.dot-idle{width:6px;height:6px;border-radius:50%;background:var(--text3);display:inline-block}
+.tag{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:500}
+.divider{border:none;border-top:1px solid var(--border);margin:8px 0}
+</style>
+</head>
+<body>
+
+<!-- ══ Topbar ══ -->
+<div class="topbar" style="border-bottom:1px solid var(--border)">
+  <span style="font-size:14px;font-weight:600;color:var(--text);margin-right:8px;">入口图生成工具</span>
+  <div class="steps">
+    <button class="step-btn active" data-step="1"><span class="step-num">01</span>图层解析</button>
+    <button class="step-btn" data-step="2"><span class="step-num">02</span>尺寸配置</button>
+    <button class="step-btn" data-step="3"><span class="step-num">03</span>生成结果</button>
+  </div>
+  <button class="btn btn-primary" id="generateBtn" style="margin-left:auto">⚡ 生成所有尺寸</button>
+</div>
+
+<div class="app">
+
+<!-- ══ Sidebar ══ -->
+<div class="sidebar">
+
+  <!-- PSD upload -->
+  <div class="sb-section">
+    <div class="sb-title">源文件 (PSD / PNG)</div>
+    <div class="upzone" id="upzone">
+      <input type="file" id="fileInput" accept=".psd,.png,.jpg,.jpeg">
+      <div class="uz-icon">📂</div>
+      <p><strong>点击上传</strong>或拖入文件</p>
+      <p style="margin-top:2px;font-size:10px;">.psd · .png · .jpg</p>
+    </div>
+    <div id="alertMain" class="alert alert-warn"></div>
+  </div>
+
+  <!-- Sizes -->
+  <div class="sb-section" style="flex:1;overflow-y:auto;overflow-x:hidden">
+    <div class="sb-title">输出尺寸</div>
+    <div id="sizeList"></div>
+    <button class="btn btn-ghost btn-sm btn-full" id="addSizeBtn" style="margin-top:4px">＋ 新增尺寸</button>
+    <div class="add-form" id="addForm">
+      <div class="af-row"><input id="afName" placeholder="名称"></div>
+      <div class="af-row">
+        <input id="afW" type="number" placeholder="宽 px">
+        <input id="afH" type="number" placeholder="高 px">
+      </div>
+      <div class="af-row">
+        <button class="btn btn-sm btn-primary" id="afConfirm">添加</button>
+        <button class="btn btn-sm" id="afCancel">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate footer -->
+  <div class="sb-section">
+    <div id="sbStatus" style="font-size:11px;color:var(--text3);margin-bottom:6px">等待上传源文件</div>
+    <button class="btn btn-full btn-sm" id="dlAllBtn" style="display:none">⬇ 全部下载</button>
+  </div>
+</div>
+
+<!-- ══ Main ══ -->
+<div class="main">
+<div class="workspace">
+
+  <!-- Step 1: Layer roles -->
+  <div class="pane active" id="pane1">
+    <div class="empty" id="s1empty">
+      <div class="ei">🎨</div>
+      <p>上传 PSD 或图片后<br>在这里给每个图层指定角色<br>背景 · 主产品 · 标题文字 · 装饰</p>
+    </div>
+    <div id="s1content" style="display:none">
+      <div class="role-guide">
+        <p>为每个图层指定角色，生成时将按角色规则合成到各尺寸。可调整每层的透明度和叠放顺序（▲上移=更靠上层，▼下移=更靠下层）</p>
+        <div class="role-tags" style="margin-top:6px">
+          <span class="role-tag rt-bg">BG 背景</span>
+          <span style="font-size:11px;color:var(--text3)">等比+居中裁切填满</span>
+          <span class="role-tag rt-product">主产品</span>
+          <span style="font-size:11px;color:var(--text3)">等比缩放至产品框大致尺寸，仅画布边缘裁切</span>
+          <span class="role-tag rt-title">标题文字</span>
+          <span style="font-size:11px;color:var(--text3)">按文字框宽等比缩放</span>
+          <span class="role-tag rt-deco">装饰</span>
+          <span style="font-size:11px;color:var(--text3)">按比例跟随</span>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">↑ 列表上方 = 图层叠放在上方（先看见）　↓ 下方 = 在底层</div>
+      <div id="layerRoleList"></div>
+
+      <!-- Composite preview -->
+      <div style="margin-top:16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden">
+        <div style="padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)">合成预览</div>
+        <div style="padding:12px;display:flex;align-items:center;justify-content:center;background:#111;min-height:120px">
+          <canvas id="previewCanvas" style="max-width:100%;max-height:300px;border-radius:4px"></canvas>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;justify-content:flex-end">
+        <button class="btn btn-primary" onclick="goStep(2)">下一步：配置各尺寸 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Size config -->
+  <div class="pane" id="pane2">
+    <div class="empty" id="s2empty">
+      <div class="ei">📐</div>
+      <p>在左侧选择一个尺寸<br>上传该尺寸的 demo 参考图<br>然后框选各区域</p>
+    </div>
+    <div id="s2content" style="display:none">
+      <div style="font-size:13px;font-weight:600;margin-bottom:14px;color:var(--text2)">
+        配置：<span id="s2SizeName" style="color:var(--text)"></span>
+        <span id="s2SizeDim" style="font-size:11px;color:var(--text3);margin-left:6px"></span>
+      </div>
+      <div class="size-config-wrap">
+        <!-- Demo panel -->
+        <div class="demo-panel">
+          <div class="demo-panel-header">
+            <span id="demoPanelTitle">参考图</span>
+            <span style="flex:1"></span>
+            <span id="demoScaleInfo" style="font-size:10px"></span>
+            <button class="btn btn-ghost btn-sm" id="changeDemoBtn" style="padding:2px 8px;font-size:11px">更换</button>
+            <input type="file" id="demoFileInput" accept=".png,.jpg,.jpeg" style="display:none">
+          </div>
+          <div class="demo-panel-body" id="demoPanelBody">
+            <!-- upload prompt or canvas -->
+            <div class="demo-upzone" id="demoUpzone">
+              <input type="file" id="demoUpzoneInput" accept=".png,.jpg,.jpeg">
+              <div style="font-size:24px;opacity:.3">🖼</div>
+              <p>上传此尺寸的 demo 参考图</p>
+              <p style="font-size:10px;color:var(--text3)">jpg / png 标注图</p>
+            </div>
+            <div class="canvas-wrap" id="canvasWrap" style="display:none">
+              <canvas id="demoCanvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zone panel -->
+        <div class="zone-panel">
+          <div class="zp-title">区域定义</div>
+          <div class="zp-hint">在参考图上拖拽框选区域。<br>「主产品」框只示意大致位置和大小——产品会按等比缩放放入，超出画布部分才会被裁掉。</div>
+
+          <div class="type-btns">
+            <div class="type-btn tb-product on" data-type="product">主产品</div>
+            <div class="type-btn tb-title" data-type="title">文字区</div>
+            <div class="type-btn tb-bg" data-type="bg">背景</div>
+            <div class="type-btn tb-safe" data-type="safe">安全区</div>
+          </div>
+
+          <div class="field">
+            <label>区域名称</label>
+            <input type="text" id="zoneName" placeholder="可选，留空自动命名">
+          </div>
+
+          <div class="coords-grid">
+            <div class="field"><label>X</label><input type="number" id="zX" readonly></div>
+            <div class="field"><label>Y</label><input type="number" id="zY" readonly></div>
+            <div class="field"><label>宽</label><input type="number" id="zW" readonly></div>
+            <div class="field"><label>高</label><input type="number" id="zH" readonly></div>
+          </div>
+
+          <!-- Align picker (product only) -->
+          <div id="alignSection">
+            <div class="field" style="margin-bottom:4px"><label>产品锚点（等比缩放后的定位基准）</label></div>
+            <div class="align-picker" id="alignPicker">
+              <div class="align-btn on" data-ax="left" data-ay="top">↖</div>
+              <div class="align-btn" data-ax="center" data-ay="top">↑</div>
+              <div class="align-btn" data-ax="right" data-ay="top">↗</div>
+              <div class="align-btn" data-ax="left" data-ay="center">←</div>
+              <div class="align-btn on" data-ax="center" data-ay="center">·</div>
+              <div class="align-btn" data-ax="right" data-ay="center">→</div>
+              <div class="align-btn" data-ax="left" data-ay="bottom">↙</div>
+              <div class="align-btn" data-ax="center" data-ay="bottom">↓</div>
+              <div class="align-btn" data-ax="right" data-ay="bottom">↘</div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-full btn-sm" id="addZoneBtn" style="margin-top:10px">＋ 保存区域</button>
+          <button class="btn btn-full btn-sm btn-ghost" id="clearSelBtn">清除选框</button>
+
+          <div class="zone-list" id="zoneList">
+            <div class="zl-title">已定义区域</div>
+            <div id="zoneListBody"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Results -->
+  <div class="pane" id="pane3">
+    <div class="empty" id="s3empty">
+      <div class="ei">⚡</div>
+      <p>配置好各尺寸后<br>点击顶部「生成所有尺寸」</p>
+    </div>
+    <div id="s3content" style="display:none">
+      <div class="results-grid" id="resultsGrid"></div>
+    </div>
+  </div>
+
+</div><!-- /workspace -->
+
+<div class="statusbar">
+  <span id="stDot" class="dot-idle"></span>
+  <span id="stText">等待上传</span>
+  <span style="flex:1"></span>
+  <span id="stExtra"></span>
+</div>
+</div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+const S = {
+  src: null,           // {canvas, w, h}
+  layers: [],          // [{id,name,role,canvas,x,y,w,h,visible}]
+  sizes: [],
+  activeSize: null,
+  drawType: 'product',
+  alignX: 'center',
+  alignY: 'center',
+  drawing: false,
+  dragStart: null,
+  curSel: null,        // {x,y,w,h} in demo image coords
+  demoScale: 1,
+  results: [],
+};
+
+const DEFAULT_SIZES = [
+  {name:'首页 Banner',w:750,h:360},
+  {name:'频道入口 2:1',w:375,h:188},
+  {name:'方形入口',w:375,h:375},
+  {name:'竖版 3:4',w:375,h:500},
+].map(s=>({...s,id:uid(),checked:true,demoImg:null,zones:[],layerMap:{bg:null,product:null,title:null}}));
+
+S.sizes = DEFAULT_SIZES;
+
+const $ = id => document.getElementById(id);
+function uid(){ return Math.random().toString(36).slice(2,8) }
+
+// ═══════════════════════════════════════════════════════
+// UPLOAD SOURCE
+// ═══════════════════════════════════════════════════════
+const upzone = $('upzone'), fileInput = $('fileInput');
+upzone.addEventListener('click',()=>fileInput.click());
+fileInput.addEventListener('change',e=>handleSrc(e.target.files[0]));
+upzone.addEventListener('dragover',e=>{e.preventDefault();upzone.classList.add('over')});
+upzone.addEventListener('dragleave',()=>upzone.classList.remove('over'));
+upzone.addEventListener('drop',e=>{e.preventDefault();upzone.classList.remove('over');handleSrc(e.dataTransfer.files[0])});
+
+async function handleSrc(file){
+  if(!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  setSt('解析中…');
+  if(ext==='psd') await loadPSD(file);
+  else if(['png','jpg','jpeg'].includes(ext)) await loadImgFile(file);
+  else showAlert('请上传 .psd / .png / .jpg 文件','alertMain');
+}
+
+async function loadImgFile(file){
+  const url = URL.createObjectURL(file);
+  const img = await imgFromUrl(url);
+  const c = toCanvas(img);
+  S.src = {canvas:c, w:img.naturalWidth, h:img.naturalHeight};
+  S.layers = [{id:uid(),name:file.name,role:'none',canvas:c,x:0,y:0,w:c.width,h:c.height,opacity:100}];
+  onSrcLoaded();
+  setSt(`图片已加载 ${c.width}×${c.height}`,true);
+}
+
+async function loadPSD(file){
+  // ag-psd is inlined, exposed as window.agPsd
+  if(typeof agPsd === 'undefined'){
+    showAlert('PSD解析库加载异常，请刷新页面重试', 'alertMain');
+    setSt('库加载失败');
+    return;
+  }
+
+  setSt('正在解析PSD…');
+  try{
+    const buf = await file.arrayBuffer();
+
+    // ag-psd auto-detects browser environment and uses document.createElement('canvas')
+    // No need to call initializeCanvas in browser context
+
+    // readPsd returns a structured Psd object
+    // useImageData:false => layer.canvas is populated (not layer.imageData)
+    const psd = agPsd.readPsd(buf, {
+      skipLayerImageData: false,
+      skipCompositeImageData: false,
+      skipThumbnail: true,
+      useImageData: false,
+    });
+
+    setSt('PSD解析完成，正在提取图层…');
+
+    const psdW = psd.width, psdH = psd.height;
+
+    // Extract layers first so we can use them for fallback composite
+    S.layers = [];
+    function walkLayers(layers){
+      if(!layers) return;
+      for(const layer of layers){
+        if(layer.children){ walkLayers(layer.children); continue; }
+        const lw = (layer.right||0) - (layer.left||0);
+        const lh = (layer.bottom||0) - (layer.top||0);
+        if(!layer.canvas && (lw<=0 || lh<=0)) continue;
+        S.layers.push({
+          id: uid(),
+          name: (layer.name||'图层'+(S.layers.length+1)).trim(),
+          role: 'none',
+          canvas: layer.canvas || null,
+          x: layer.left || 0,
+          y: layer.top  || 0,
+          w: lw,
+          h: lh,
+          hidden: layer.hidden || false,
+          opacity: layer.opacity !== undefined ? Math.round(layer.opacity*100) : 100,
+        });
+      }
+    }
+    walkLayers(psd.children);
+    S.layers.reverse(); // bottom→top draw order
+
+    // Build composite canvas
+    let compCanvas;
+    if(psd.canvas){
+      compCanvas = psd.canvas;
+    } else {
+      // Fallback: draw all visible layers bottom→top
+      compCanvas = document.createElement('canvas');
+      compCanvas.width = psdW; compCanvas.height = psdH;
+      const cctx = compCanvas.getContext('2d');
+      cctx.fillStyle = '#ffffff';
+      cctx.fillRect(0, 0, psdW, psdH);
+      for(const l of S.layers){
+        if(l.canvas && !l.hidden){
+          cctx.drawImage(l.canvas, l.x, l.y);
+        }
+      }
+    }
+    S.src = {canvas: compCanvas, w: psdW, h: psdH};
+
+    if(S.layers.length === 0){
+      showAlert('未提取到图层，但合成图已加载，可用单图模式继续', 'alertMain');
+    }
+
+    onSrcLoaded();
+    setSt(`✓ PSD已解析：${S.layers.length} 个图层，${psdW}×${psdH}px`, true);
+
+  }catch(e){
+    console.error('PSD load error:', e);
+    showAlert(`PSD解析失败：${e.message}。请在PS中另存时勾选"最大兼容"，或改用导出PNG`, 'alertMain');
+    setSt('解析失败');
+  }
+}
+
+function onSrcLoaded(){
+  renderLayerRoles();
+  drawCompositePreview();
+  renderSizes();
+  $('s1empty').style.display='none';
+  $('s1content').style.display='block';
+}
+
+// ═══════════════════════════════════════════════════════
+// STEP 1 — Layer roles
+// ═══════════════════════════════════════════════════════
+const ROLES = [
+  {v:'none',  label:'忽略'},
+  {v:'bg',    label:'背景'},
+  {v:'product',label:'主产品'},
+  {v:'title', label:'标题文字'},
+  {v:'deco',  label:'装饰'},
+];
+
+function renderLayerRoles(){
+  const el = $('layerRoleList');
+  el.innerHTML='';
+  const n = S.layers.length;
+  // S.layers[0] = bottom-most (drawn first). Display top-of-stack first (idx n-1) at top of list.
+  for(let displayIdx=0; displayIdx<n; displayIdx++){
+    const idx = n - 1 - displayIdx; // actual index into S.layers
+    const l = S.layers[idx];
+
+    const row = document.createElement('div');
+    row.className = 'layer-item role-'+l.role;
+    row.id = 'lr-'+l.id;
+    row.style.flexWrap='wrap';
+
+    const thumb = document.createElement('div');
+    thumb.className='li-thumb';
+    if(l.canvas){
+      const tc=document.createElement('canvas');
+      tc.width=32;tc.height=32;
+      const tcx=tc.getContext('2d');
+      tcx.fillStyle='#2a2a2a';tcx.fillRect(0,0,32,32);
+      const sc=Math.min(32/Math.max(l.w||1,1),32/Math.max(l.h||1,1));
+      const ox=(32-l.w*sc)/2,oy=(32-l.h*sc)/2;
+      if(l.canvas.width>0) tcx.drawImage(l.canvas,l.x||0,l.y||0,l.w||l.canvas.width,l.h||l.canvas.height,ox,oy,l.w*sc,l.h*sc);
+      thumb.appendChild(tc);
+    }
+
+    const sel=document.createElement('select');
+    sel.className='role-sel';
+    ROLES.forEach(r=>{
+      const o=document.createElement('option');
+      o.value=r.v; o.textContent=r.label;
+      if(r.v===l.role) o.selected=true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change',e=>{
+      l.role=e.target.value;
+      row.className='layer-item role-'+l.role;
+    });
+
+    const name=document.createElement('span');
+    name.className='li-name';
+    name.title=l.name;
+    name.textContent=l.name;
+
+    // Reorder: ▲ = move toward top of stack (higher index in S.layers, shown higher in list)
+    //          ▼ = move toward bottom of stack (lower index, shown lower in list)
+    const orderBox=document.createElement('div');
+    orderBox.style.cssText='display:flex;flex-direction:column;gap:1px;flex-shrink:0';
+    const upBtn=document.createElement('button');
+    upBtn.textContent='▲'; upBtn.title='上移一层（更靠上/前）';
+    upBtn.className='btn btn-ghost';
+    upBtn.style.cssText='padding:0 4px;font-size:8px;line-height:1;height:13px;min-height:13px';
+    upBtn.disabled = idx === n-1; // already topmost
+    upBtn.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(idx<n-1){
+        [S.layers[idx],S.layers[idx+1]]=[S.layers[idx+1],S.layers[idx]];
+        renderLayerRoles();
+      }
+    });
+    const downBtn=document.createElement('button');
+    downBtn.textContent='▼'; downBtn.title='下移一层（更靠下/后）';
+    downBtn.className='btn btn-ghost';
+    downBtn.style.cssText='padding:0 4px;font-size:8px;line-height:1;height:13px;min-height:13px';
+    downBtn.disabled = idx === 0; // already bottommost
+    downBtn.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(idx>0){
+        [S.layers[idx],S.layers[idx-1]]=[S.layers[idx-1],S.layers[idx]];
+        renderLayerRoles();
+      }
+    });
+    orderBox.appendChild(upBtn);
+    orderBox.appendChild(downBtn);
+
+    // Opacity slider
+    const opWrap=document.createElement('div');
+    opWrap.style.cssText='display:flex;align-items:center;gap:4px;flex-shrink:0;width:90px';
+    const opSlider=document.createElement('input');
+    opSlider.type='range'; opSlider.min='0'; opSlider.max='100'; opSlider.step='1';
+    opSlider.value = l.opacity!==undefined?l.opacity:100;
+    opSlider.style.cssText='flex:1;accent-color:var(--accent);height:4px';
+    const opLabel=document.createElement('span');
+    opLabel.style.cssText='font-size:10px;color:var(--text3);width:30px;text-align:right;flex-shrink:0';
+    opLabel.textContent=opSlider.value+'%';
+    opSlider.addEventListener('input',e=>{
+      l.opacity=parseInt(e.target.value);
+      opLabel.textContent=l.opacity+'%';
+    });
+    opWrap.appendChild(opSlider);
+    opWrap.appendChild(opLabel);
+
+    row.appendChild(orderBox);
+    row.appendChild(thumb);
+    row.appendChild(name);
+    row.appendChild(opWrap);
+    row.appendChild(sel);
+    el.appendChild(row);
+  }
+}
+
+function drawCompositePreview(){
+  const cv=$('previewCanvas');
+  if(!S.src) return;
+  const maxW=600,maxH=280;
+  const sc=Math.min(1,maxW/S.src.w,maxH/S.src.h);
+  cv.width=Math.round(S.src.w*sc);
+  cv.height=Math.round(S.src.h*sc);
+  cv.getContext('2d').drawImage(S.src.canvas,0,0,cv.width,cv.height);
+}
+
+// ═══════════════════════════════════════════════════════
+// SIZES
+// ═══════════════════════════════════════════════════════
+function renderSizes(){
+  const el=$('sizeList');
+  el.innerHTML='';
+  S.sizes.forEach(sz=>{
+    const row=document.createElement('div');
+    row.className='size-item'+(S.activeSize&&S.activeSize.id===sz.id?' active':'')+(sz.zones.length>0?' configured':'');
+    row.innerHTML=`
+      <input type="checkbox" class="si-check" ${sz.checked?'checked':''}>
+      <span class="si-name">${sz.name}</span>
+      <span class="si-dim">${sz.w}×${sz.h}</span>
+    `;
+    row.querySelector('.si-check').addEventListener('change',e=>{sz.checked=e.target.checked;e.stopPropagation()});
+    row.addEventListener('click',e=>{
+      if(e.target.classList.contains('si-check'))return;
+      activateSize(sz);
+      goStep(2);
+    });
+    el.appendChild(row);
+  });
+}
+
+function activateSize(sz){
+  S.activeSize=sz;
+  S.curSel=null;
+  renderSizes();
+  renderZoneList();
+  $('s2SizeName').textContent=sz.name;
+  $('s2SizeDim').textContent=sz.w+'×'+sz.h+'px';
+  $('s2empty').style.display='none';
+  $('s2content').style.display='block';
+  if(sz.demoImg){
+    loadDemoCanvas(sz.demoImg);
+  } else {
+    $('canvasWrap').style.display='none';
+    $('demoUpzone').style.display='block';
+  }
+  clearSelRect();
+}
+
+// add size
+$('addSizeBtn').addEventListener('click',()=>$('addForm').classList.toggle('open'));
+$('afCancel').addEventListener('click',()=>$('addForm').classList.remove('open'));
+$('afConfirm').addEventListener('click',()=>{
+  const name=$('afName').value.trim();
+  const w=parseInt($('afW').value),h=parseInt($('afH').value);
+  if(!name||!w||!h){showAlert('请填写名称和宽高','alertMain');return}
+  S.sizes.push({id:uid(),name,w,h,checked:true,demoImg:null,zones:[],layerMap:{bg:null,product:null,title:null}});
+  $('addForm').classList.remove('open');
+  $('afName').value='';$('afW').value='';$('afH').value='';
+  renderSizes();
+});
+
+// ═══════════════════════════════════════════════════════
+// DEMO IMAGE
+// ═══════════════════════════════════════════════════════
+function setupDemoUpload(inputEl,callback){
+  inputEl.addEventListener('change',e=>{ if(e.target.files[0]) callback(e.target.files[0]) });
+}
+function handleDemoFile(file){
+  if(!S.activeSize)return;
+  const url=URL.createObjectURL(file);
+  imgFromUrl(url).then(img=>{
+    const c=toCanvas(img);
+    S.activeSize.demoImg=c;
+    loadDemoCanvas(c);
+    renderSizes();
+  });
+}
+setupDemoUpload($('demoUpzoneInput'),handleDemoFile);
+setupDemoUpload($('demoFileInput'),handleDemoFile);
+$('demoUpzone').addEventListener('click',()=>$('demoUpzoneInput').click());
+$('changeDemoBtn').addEventListener('click',()=>$('demoFileInput').click());
+
+function loadDemoCanvas(imgCanvas){
+  $('demoUpzone').style.display='none';
+  $('canvasWrap').style.display='inline-block';
+  const body=$('demoPanelBody');
+  const maxW=body.clientWidth-32||560;
+  const maxH=500;
+  const sc=Math.min(1,maxW/imgCanvas.width,maxH/imgCanvas.height);
+  S.demoScale=sc;
+  const cv=$('demoCanvas');
+  cv.width=Math.round(imgCanvas.width*sc);
+  cv.height=Math.round(imgCanvas.height*sc);
+  const ctx=cv.getContext('2d');
+  ctx.drawImage(imgCanvas,0,0,cv.width,cv.height);
+  $('demoScaleInfo').textContent=`${imgCanvas.width}×${imgCanvas.height}  ${Math.round(sc*100)}%`;
+  redrawDemoOverlays();
+}
+
+// ═══════════════════════════════════════════════════════
+// CANVAS DRAWING
+// ═══════════════════════════════════════════════════════
+const cw=$('canvasWrap');
+let selEl=null;
+
+cw.addEventListener('mousedown',e=>{
+  if(!S.activeSize||!S.activeSize.demoImg)return;
+  S.drawing=true;
+  const r=getCanvasRect();
+  S.dragStart={x:e.clientX-r.left,y:e.clientY-r.top};
+  S.curSel=null;
+  removeSelEl();
+});
+cw.addEventListener('mousemove',e=>{
+  if(!S.drawing)return;
+  const r=getCanvasRect();
+  const ex=e.clientX-r.left,ey=e.clientY-r.top;
+  const x=Math.min(S.dragStart.x,ex),y=Math.min(S.dragStart.y,ey);
+  const w=Math.abs(ex-S.dragStart.x),h=Math.abs(ey-S.dragStart.y);
+  const sc=S.demoScale;
+  S.curSel={x:Math.round(x/sc),y:Math.round(y/sc),w:Math.round(w/sc),h:Math.round(h/sc)};
+  updateSelEl(x,y,w,h);
+  updateCoordFields();
+});
+cw.addEventListener('mouseup',()=>{S.drawing=false});
+cw.addEventListener('mouseleave',()=>{S.drawing=false});
+
+function getCanvasRect(){
+  return $('demoCanvas').getBoundingClientRect();
+}
+function removeSelEl(){
+  if(selEl){selEl.remove();selEl=null;}
+}
+function clearSelRect(){
+  removeSelEl();
+  S.curSel=null;
+  ['zX','zY','zW','zH'].forEach(id=>{$(id).value=''});
+}
+function updateSelEl(x,y,w,h){
+  if(!selEl){
+    selEl=document.createElement('div');
+    selEl.className='sel-rect';
+    cw.appendChild(selEl);
+  }
+  selEl.style.left=x+'px';selEl.style.top=y+'px';
+  selEl.style.width=w+'px';selEl.style.height=h+'px';
+}
+function updateCoordFields(){
+  const d=S.curSel;
+  if(!d)return;
+  $('zX').value=d.x;$('zY').value=d.y;$('zW').value=d.w;$('zH').value=d.h;
+}
+$('clearSelBtn').addEventListener('click',clearSelRect);
+
+// ═══════════════════════════════════════════════════════
+// ZONE TYPE & ALIGN
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.type-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    S.drawType=btn.dataset.type;
+    $('alignSection').style.display=S.drawType==='product'?'block':'none';
+  });
+});
+// default: product selected, show align
+$('alignSection').style.display='block';
+
+// Align picker — only one active at a time
+let curAlignBtn = null;
+document.querySelectorAll('.align-btn').forEach(btn=>{
+  // set default center
+  if(btn.dataset.ax==='center'&&btn.dataset.ay==='center'){ btn.classList.add('on'); curAlignBtn=btn; }
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.align-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    curAlignBtn=btn;
+    S.alignX=btn.dataset.ax;
+    S.alignY=btn.dataset.ay;
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+// ADD ZONE
+// ═══════════════════════════════════════════════════════
+$('addZoneBtn').addEventListener('click',()=>{
+  if(!S.activeSize){showAlert('请先选择一个尺寸','alertMain');return}
+  const d=S.curSel;
+  if(!d||d.w<4||d.h<4){showAlert('请先在参考图上拖拽框选区域','alertMain');return}
+  const typeNames={product:'主产品',title:'标题文字',bg:'背景',safe:'安全区'};
+  const name=$('zoneName').value.trim()||typeNames[S.drawType];
+  const zone={
+    id:uid(),type:S.drawType,name,
+    x:d.x,y:d.y,w:d.w,h:d.h,
+    alignX:S.alignX,alignY:S.alignY,
+  };
+  S.activeSize.zones.push(zone);
+  clearSelRect();
+  $('zoneName').value='';
+  renderZoneList();
+  renderSizes();
+  redrawDemoOverlays();
+});
+
+// ═══════════════════════════════════════════════════════
+// ZONE LIST
+// ═══════════════════════════════════════════════════════
+function renderZoneList(){
+  const body=$('zoneListBody');
+  body.innerHTML='';
+  if(!S.activeSize)return;
+  S.activeSize.zones.forEach(z=>{
+    const el=document.createElement('div');
+    el.className='zt';
+    el.innerHTML=`
+      <div class="dot dot-${z.type}"></div>
+      <span class="ztn">${z.name}</span>
+      <span style="font-size:10px;color:var(--text3)">${z.w}×${z.h}</span>
+      <span class="ztd" title="删除">×</span>
+    `;
+    el.querySelector('.ztd').addEventListener('click',e=>{
+      e.stopPropagation();
+      S.activeSize.zones=S.activeSize.zones.filter(zz=>zz.id!==z.id);
+      renderZoneList();renderSizes();redrawDemoOverlays();
+    });
+    body.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// DEMO OVERLAYS
+// ═══════════════════════════════════════════════════════
+function redrawDemoOverlays(){
+  cw.querySelectorAll('.zone-overlay').forEach(el=>el.remove());
+  if(!S.activeSize)return;
+  const sc=S.demoScale;
+  S.activeSize.zones.forEach(z=>{
+    const div=document.createElement('div');
+    div.className=`zone-overlay zo-${z.type}`;
+    div.style.cssText=`left:${z.x*sc}px;top:${z.y*sc}px;width:${z.w*sc}px;height:${z.h*sc}px`;
+    const lbl=document.createElement('div');
+    lbl.className=`zone-label zl-${z.type}`;
+    lbl.textContent=z.name;
+    div.appendChild(lbl);
+    cw.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// STEP NAVIGATION
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.step-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>goStep(parseInt(btn.dataset.step)));
+});
+function goStep(n){
+  document.querySelectorAll('.step-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.step)===n));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('active',p.id==='pane'+n));
+  if(n===2&&S.activeSize) activateSize(S.activeSize);
+  else if(n===2&&S.sizes.length) activateSize(S.sizes[0]);
+}
+
+// ═══════════════════════════════════════════════════════
+// GENERATE
+// ═══════════════════════════════════════════════════════
+$('generateBtn').addEventListener('click',generate);
+
+async function generate(){
+  if(!S.src){showAlert('请先上传源文件','alertMain');return}
+  const targets=S.sizes.filter(s=>s.checked);
+  if(!targets.length){showAlert('请至少勾选一个输出尺寸','alertMain');return}
+
+  S.results=[];
+  setSt('生成中…');
+  for(const sz of targets){
+    const c=await renderSize(sz);
+    S.results.push({name:sz.name,w:sz.w,h:sz.h,canvas:c});
+  }
+  showResults();
+  goStep(3);
+  setSt(`已生成 ${S.results.length} 张`,true);
+}
+
+// ── Core renderer ──────────────────────────────────────
+async function renderSize(sz){
+  const out=document.createElement('canvas');
+  out.width=sz.w; out.height=sz.h;
+  const ctx=out.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  const demoW=sz.demoImg?sz.demoImg.width:sz.w;
+  const demoH=sz.demoImg?sz.demoImg.height:sz.h;
+  const productZone=sz.zones.find(z=>z.type==='product');
+  const titleZone=sz.zones.find(z=>z.type==='title');
+
+  // Iterate layers in their array order (index 0 = bottom-most, drawn first)
+  for(const l of S.layers){
+    if(l.role==='none' || !l.canvas) continue;
+    const op = (l.opacity!==undefined ? l.opacity : 100) / 100;
+    if(op <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = op;
+
+    if(l.role==='bg'){
+      // Cover entire canvas, equal scale + center-crop
+      drawCover(ctx, l.canvas, 0,0, sz.w, sz.h, 'center','center');
+
+    } else if(l.role==='product'){
+      const trimmed = getTrimmedCanvas(l);
+      if(productZone){
+        // Zone indicates POSITION + approximate SIZE only.
+        // Product (trimmed of transparent padding) is scaled proportionally (contain)
+        // to roughly match zone size, anchored per align point. Cropping only at canvas edges.
+        const zx=productZone.x/demoW*sz.w;
+        const zy=productZone.y/demoH*sz.h;
+        const zw=productZone.w/demoW*sz.w;
+        const zh=productZone.h/demoH*sz.h;
+        drawContainAnchored(ctx, trimmed.canvas, zx,zy,zw,zh, productZone.alignX||'center', productZone.alignY||'center');
+      } else {
+        // No zone: uniform scale (no stretch), positioned at proportional location
+        const scale=Math.min(sz.w/S.src.w, sz.h/S.src.h);
+        ctx.drawImage(trimmed.canvas, (l.x+trimmed.x)*scale, (l.y+trimmed.y)*scale, trimmed.w*scale, trimmed.h*scale);
+      }
+
+    } else if(l.role==='title'){
+      const trimmed = getTrimmedCanvas(l);
+      if(titleZone){
+        const zx=titleZone.x/demoW*sz.w;
+        const zy=titleZone.y/demoH*sz.h;
+        const zw=titleZone.w/demoW*sz.w;
+        const zh=titleZone.h/demoH*sz.h;
+        // fit entirely within zone (contain), centered — uniform scale, no stretch
+        const sc=Math.min(zw/trimmed.w, zh/trimmed.h);
+        const dw=trimmed.w*sc, dh=trimmed.h*sc;
+        ctx.drawImage(trimmed.canvas, zx+(zw-dw)/2, zy+(zh-dh)/2, dw, dh);
+      } else {
+        const scale=Math.min(sz.w/S.src.w, sz.h/S.src.h);
+        ctx.drawImage(trimmed.canvas, (l.x+trimmed.x)*scale, (l.y+trimmed.y)*scale, trimmed.w*scale, trimmed.h*scale);
+      }
+
+    } else if(l.role==='deco'){
+      // Uniform scale (no stretch), positioned proportionally
+      const scale=Math.min(sz.w/S.src.w, sz.h/S.src.h);
+      ctx.drawImage(l.canvas, l.x*scale, l.y*scale, l.w*scale, l.h*scale);
+    }
+
+    ctx.restore();
+  }
+
+  return out;
+}
+
+// getTrimmedCanvas: returns {canvas, x, y, w, h} where the canvas is cropped to
+// the bounding box of non-transparent pixels (with x,y = offset within original layer).
+// Result is cached on the layer object (l._trimmed) since this is somewhat expensive.
+function getTrimmedCanvas(l){
+  if(l._trimmed) return l._trimmed;
+  const src = l.canvas;
+  const w = src.width, h = src.height;
+  if(w===0 || h===0){
+    return l._trimmed = {canvas: src, x:0, y:0, w, h};
+  }
+  let imgData;
+  try{
+    imgData = src.getContext('2d').getImageData(0,0,w,h).data;
+  }catch(e){
+    // CORS or other issue — fall back to untrimmed
+    return l._trimmed = {canvas: src, x:0, y:0, w, h};
+  }
+  let minX=w, minY=h, maxX=-1, maxY=-1;
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const a = imgData[(y*w+x)*4+3];
+      if(a>0){
+        if(x<minX)minX=x; if(x>maxX)maxX=x;
+        if(y<minY)minY=y; if(y>maxY)maxY=y;
+      }
+    }
+  }
+  if(maxX<0){
+    // fully transparent
+    return l._trimmed = {canvas: src, x:0, y:0, w, h};
+  }
+  const tw=maxX-minX+1, th=maxY-minY+1;
+  if(minX===0 && minY===0 && tw===w && th===h){
+    return l._trimmed = {canvas: src, x:0, y:0, w, h};
+  }
+  const tc=document.createElement('canvas');
+  tc.width=tw; tc.height=th;
+  tc.getContext('2d').drawImage(src, minX,minY,tw,th, 0,0,tw,th);
+  return l._trimmed = {canvas:tc, x:minX, y:minY, w:tw, h:th};
+}
+
+
+function drawCover(ctx, src, dx,dy, dw,dh, alignX='center', alignY='center'){
+  if(!src||src.width===0) return;
+  const sw=src.width, sh=src.height;
+  const sc=Math.max(dw/sw, dh/sh);
+  const scaledW=sw*sc, scaledH=sh*sc;
+
+  let ox=0,oy=0;
+  if(alignX==='left')   ox=0;
+  else if(alignX==='right') ox=scaledW-dw;
+  else ox=(scaledW-dw)/2;
+
+  if(alignY==='top')    oy=0;
+  else if(alignY==='bottom') oy=scaledH-dh;
+  else oy=(scaledH-dh)/2;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(dx,dy,dw,dh);
+  ctx.clip();
+  ctx.drawImage(src, dx-ox, dy-oy, scaledW, scaledH);
+  ctx.restore();
+}
+
+// drawContainAnchored: the zone box's chosen anchor point (one of 9: corners/edges/center,
+// default = center) represents a reference point. The source image is scaled
+// proportionally to "contain" within the zone's w/h (limited by whichever dimension
+// — width or height — would otherwise overflow). The SAME relative anchor point on the
+// scaled image is then placed exactly at the zone's anchor point. No clipping to the
+// zone — only the canvas edges crop if the result extends past the output bounds.
+function drawContainAnchored(ctx, src, zx,zy,zw,zh, alignX='center', alignY='center'){
+  if(!src||src.width===0) return;
+  const sw=src.width, sh=src.height;
+
+  // contain: pick the limiting dimension so the image fits within zw/zh
+  const sc=Math.min(zw/sw, zh/sh);
+  const scaledW=sw*sc, scaledH=sh*sc;
+
+  // anchor point location within the zone box
+  let anchorZoneX = alignX==='left' ? zx : alignX==='right' ? zx+zw : zx+zw/2;
+  let anchorZoneY = alignY==='top'  ? zy : alignY==='bottom'? zy+zh : zy+zh/2;
+
+  // corresponding point on the scaled image (relative to its own top-left)
+  let anchorImgX = alignX==='left' ? 0 : alignX==='right' ? scaledW : scaledW/2;
+  let anchorImgY = alignY==='top'  ? 0 : alignY==='bottom'? scaledH : scaledH/2;
+
+  const px = anchorZoneX - anchorImgX;
+  const py = anchorZoneY - anchorImgY;
+
+  // No ctx.clip() — canvas bounds naturally crop if image extends outside
+  ctx.drawImage(src, px, py, scaledW, scaledH);
+}
+
+// ═══════════════════════════════════════════════════════
+// SHOW RESULTS
+// ═══════════════════════════════════════════════════════
+function showResults(){
+  const grid=$('resultsGrid');
+  grid.innerHTML='';
+  S.results.forEach(r=>{
+    const card=document.createElement('div');
+    card.className='res-card';
+    const maxThumb=280;
+    const sc=Math.min(1,maxThumb/r.w,maxThumb/r.h);
+    const tc=document.createElement('canvas');
+    tc.width=Math.round(r.w*sc);
+    tc.height=Math.round(r.h*sc);
+    tc.getContext('2d').drawImage(r.canvas,0,0,tc.width,tc.height);
+    tc.style.width='100%';
+    const foot=document.createElement('div');
+    foot.className='res-card-foot';
+    foot.innerHTML=`<div><div class="res-name">${r.name}</div><div class="res-dim">${r.w}×${r.h}px</div></div>`;
+    const dlBtn=document.createElement('button');
+    dlBtn.className='btn btn-sm';
+    dlBtn.textContent='↓ 下载';
+    dlBtn.addEventListener('click',()=>dlCanvas(r.canvas,`${r.name}_${r.w}x${r.h}.png`));
+    foot.appendChild(dlBtn);
+    card.appendChild(tc);card.appendChild(foot);
+    grid.appendChild(card);
+  });
+  $('s3empty').style.display='none';
+  $('s3content').style.display='block';
+  $('dlAllBtn').style.display='block';
+}
+
+$('dlAllBtn').addEventListener('click',()=>{
+  S.results.forEach((r,i)=>setTimeout(()=>dlCanvas(r.canvas,`${r.name}_${r.w}x${r.h}.png`),i*200));
+});
+
+function dlCanvas(canvas,name){
+  const a=document.createElement('a');
+  a.download=name; a.href=canvas.toDataURL('image/png'); a.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function toCanvas(img){
+  const c=document.createElement('canvas');
+  c.width=img.naturalWidth;c.height=img.naturalHeight;
+  c.getContext('2d').drawImage(img,0,0);
+  return c;
+}
+function imgFromUrl(url){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>res(img);
+    img.onerror=rej;
+    img.src=url;
+  });
+}
+function setSt(msg,ok=false){
+  $('stText').textContent=msg;
+  $('stDot').className=ok?'dot-ok':'dot-idle';
+}
+function showAlert(msg,id){
+  const el=$(id);
+  el.textContent=msg;
+  el.className='alert alert-warn show';
+  setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// init
+renderSizes();
+</script>
+</body>
+</html>
