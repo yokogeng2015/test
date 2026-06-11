@@ -23745,6 +23745,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <span style="font-size:11px;color:var(--text3)">按比例跟随</span>
         </div>
       </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">↑ 列表上方 = 图层叠放在上方（先看见）　↓ 下方 = 在底层</div>
       <div id="layerRoleList"></div>
 
       <!-- Composite preview -->
@@ -24039,7 +24040,12 @@ const ROLES = [
 function renderLayerRoles(){
   const el = $('layerRoleList');
   el.innerHTML='';
-  S.layers.forEach((l,idx)=>{
+  const n = S.layers.length;
+  // S.layers[0] = bottom-most (drawn first). Display top-of-stack first (idx n-1) at top of list.
+  for(let displayIdx=0; displayIdx<n; displayIdx++){
+    const idx = n - 1 - displayIdx; // actual index into S.layers
+    const l = S.layers[idx];
+
     const row = document.createElement('div');
     row.className = 'layer-item role-'+l.role;
     row.id = 'lr-'+l.id;
@@ -24076,26 +24082,27 @@ function renderLayerRoles(){
     name.title=l.name;
     name.textContent=l.name;
 
-    // Reorder buttons (controls draw order, bottom→top = array order)
+    // Reorder: ▲ = move toward top of stack (higher index in S.layers, shown higher in list)
+    //          ▼ = move toward bottom of stack (lower index, shown lower in list)
     const orderBox=document.createElement('div');
     orderBox.style.cssText='display:flex;flex-direction:column;gap:1px;flex-shrink:0';
     const upBtn=document.createElement('button');
-    upBtn.textContent='▲'; upBtn.title='上移一层（更靠前/上层）';
+    upBtn.textContent='▲'; upBtn.title='上移一层（更靠上/前）';
     upBtn.className='btn btn-ghost';
     upBtn.style.cssText='padding:0 4px;font-size:8px;line-height:1;height:13px;min-height:13px';
-    upBtn.disabled = idx === S.layers.length-1;
+    upBtn.disabled = idx === n-1; // already topmost
     upBtn.addEventListener('click',e=>{
       e.stopPropagation();
-      if(idx<S.layers.length-1){
+      if(idx<n-1){
         [S.layers[idx],S.layers[idx+1]]=[S.layers[idx+1],S.layers[idx]];
         renderLayerRoles();
       }
     });
     const downBtn=document.createElement('button');
-    downBtn.textContent='▼'; downBtn.title='下移一层（更靠后/下层）';
+    downBtn.textContent='▼'; downBtn.title='下移一层（更靠下/后）';
     downBtn.className='btn btn-ghost';
     downBtn.style.cssText='padding:0 4px;font-size:8px;line-height:1;height:13px;min-height:13px';
-    downBtn.disabled = idx === 0;
+    downBtn.disabled = idx === 0; // already bottommost
     downBtn.addEventListener('click',e=>{
       e.stopPropagation();
       if(idx>0){
@@ -24129,7 +24136,7 @@ function renderLayerRoles(){
     row.appendChild(opWrap);
     row.appendChild(sel);
     el.appendChild(row);
-  });
+  }
 }
 
 function drawCompositePreview(){
@@ -24423,6 +24430,8 @@ async function renderSize(sz){
   const out=document.createElement('canvas');
   out.width=sz.w; out.height=sz.h;
   const ctx=out.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
 
   const demoW=sz.demoImg?sz.demoImg.width:sz.w;
   const demoH=sz.demoImg?sz.demoImg.height:sz.h;
@@ -24510,29 +24519,32 @@ function drawCover(ctx, src, dx,dy, dw,dh, alignX='center', alignY='center'){
   ctx.restore();
 }
 
-// drawContainAnchored: scale src proportionally to roughly fit the (dw,dh) box
-// (using the larger-fit "contain" rule based on the box's aspect vs src aspect),
-// then position the scaled image so its anchor point (per alignX/alignY) lines up
-// with the corresponding edge/center of the box. No clipping to the box —
-// only the canvas itself crops if the image extends past it.
-function drawContainAnchored(ctx, src, dx,dy,dw,dh, alignX='center', alignY='center'){
+// drawContainAnchored: the zone box's chosen anchor point (one of 9: corners/edges/center,
+// default = center) represents a reference point. The source image is scaled
+// proportionally to "contain" within the zone's w/h (limited by whichever dimension
+// — width or height — would otherwise overflow). The SAME relative anchor point on the
+// scaled image is then placed exactly at the zone's anchor point. No clipping to the
+// zone — only the canvas edges crop if the result extends past the output bounds.
+function drawContainAnchored(ctx, src, zx,zy,zw,zh, alignX='center', alignY='center'){
   if(!src||src.width===0) return;
   const sw=src.width, sh=src.height;
-  // contain: scale so the image fits within the box without overflowing it
-  const sc=Math.min(dw/sw, dh/sh);
+
+  // contain: pick the limiting dimension so the image fits within zw/zh
+  const sc=Math.min(zw/sw, zh/sh);
   const scaledW=sw*sc, scaledH=sh*sc;
 
-  let px;
-  if(alignX==='left')        px = dx;
-  else if(alignX==='right')  px = dx + dw - scaledW;
-  else                        px = dx + (dw - scaledW)/2;
+  // anchor point location within the zone box
+  let anchorZoneX = alignX==='left' ? zx : alignX==='right' ? zx+zw : zx+zw/2;
+  let anchorZoneY = alignY==='top'  ? zy : alignY==='bottom'? zy+zh : zy+zh/2;
 
-  let py;
-  if(alignY==='top')         py = dy;
-  else if(alignY==='bottom') py = dy + dh - scaledH;
-  else                        py = dy + (dh - scaledH)/2;
+  // corresponding point on the scaled image (relative to its own top-left)
+  let anchorImgX = alignX==='left' ? 0 : alignX==='right' ? scaledW : scaledW/2;
+  let anchorImgY = alignY==='top'  ? 0 : alignY==='bottom'? scaledH : scaledH/2;
 
-  // No ctx.clip() — canvas bounds naturally crop if image goes outside
+  const px = anchorZoneX - anchorImgX;
+  const py = anchorZoneY - anchorImgY;
+
+  // No ctx.clip() — canvas bounds naturally crop if image extends outside
   ctx.drawImage(src, px, py, scaledW, scaledH);
 }
 
