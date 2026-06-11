@@ -23733,12 +23733,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div id="s1content" style="display:none">
       <div class="role-guide">
-        <p>为每个图层指定角色，生成时将按角色规则合成到各尺寸</p>
+        <p>为每个图层指定角色，生成时将按角色规则合成到各尺寸。可调整每层的透明度和叠放顺序（▲上移=更靠上层，▼下移=更靠下层）</p>
         <div class="role-tags" style="margin-top:6px">
           <span class="role-tag rt-bg">BG 背景</span>
           <span style="font-size:11px;color:var(--text3)">等比+居中裁切填满</span>
           <span class="role-tag rt-product">主产品</span>
-          <span style="font-size:11px;color:var(--text3)">等比cover进产品框（对齐点可设）</span>
+          <span style="font-size:11px;color:var(--text3)">等比缩放至产品框大致尺寸，仅画布边缘裁切</span>
           <span class="role-tag rt-title">标题文字</span>
           <span style="font-size:11px;color:var(--text3)">按文字框宽等比缩放</span>
           <span class="role-tag rt-deco">装饰</span>
@@ -23799,7 +23799,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <!-- Zone panel -->
         <div class="zone-panel">
           <div class="zp-title">区域定义</div>
-          <div class="zp-hint">在参考图上拖拽框选区域，然后设置类型并保存</div>
+          <div class="zp-hint">在参考图上拖拽框选区域。<br>「主产品」框只示意大致位置和大小——产品会按等比缩放放入，超出画布部分才会被裁掉。</div>
 
           <div class="type-btns">
             <div class="type-btn tb-product on" data-type="product">主产品</div>
@@ -23822,7 +23822,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
           <!-- Align picker (product only) -->
           <div id="alignSection">
-            <div class="field" style="margin-bottom:4px"><label>产品对齐点</label></div>
+            <div class="field" style="margin-bottom:4px"><label>产品锚点（等比缩放后的定位基准）</label></div>
             <div class="align-picker" id="alignPicker">
               <div class="align-btn on" data-ax="left" data-ay="top">↖</div>
               <div class="align-btn" data-ax="center" data-ay="top">↑</div>
@@ -23925,7 +23925,7 @@ async function loadImgFile(file){
   const img = await imgFromUrl(url);
   const c = toCanvas(img);
   S.src = {canvas:c, w:img.naturalWidth, h:img.naturalHeight};
-  S.layers = [{id:uid(),name:file.name,role:'none',canvas:c,x:0,y:0,w:c.width,h:c.height}];
+  S.layers = [{id:uid(),name:file.name,role:'none',canvas:c,x:0,y:0,w:c.width,h:c.height,opacity:100}];
   onSrcLoaded();
   setSt(`图片已加载 ${c.width}×${c.height}`,true);
 }
@@ -23977,6 +23977,7 @@ async function loadPSD(file){
           w: lw,
           h: lh,
           hidden: layer.hidden || false,
+          opacity: layer.opacity !== undefined ? Math.round(layer.opacity*100) : 100,
         });
       }
     }
@@ -24038,10 +24039,11 @@ const ROLES = [
 function renderLayerRoles(){
   const el = $('layerRoleList');
   el.innerHTML='';
-  S.layers.forEach(l=>{
+  S.layers.forEach((l,idx)=>{
     const row = document.createElement('div');
     row.className = 'layer-item role-'+l.role;
     row.id = 'lr-'+l.id;
+    row.style.flexWrap='wrap';
 
     const thumb = document.createElement('div');
     thumb.className='li-thumb';
@@ -24049,7 +24051,6 @@ function renderLayerRoles(){
       const tc=document.createElement('canvas');
       tc.width=32;tc.height=32;
       const tcx=tc.getContext('2d');
-      // checker
       tcx.fillStyle='#2a2a2a';tcx.fillRect(0,0,32,32);
       const sc=Math.min(32/Math.max(l.w||1,1),32/Math.max(l.h||1,1));
       const ox=(32-l.w*sc)/2,oy=(32-l.h*sc)/2;
@@ -24075,8 +24076,57 @@ function renderLayerRoles(){
     name.title=l.name;
     name.textContent=l.name;
 
+    // Reorder buttons (controls draw order, bottom→top = array order)
+    const orderBox=document.createElement('div');
+    orderBox.style.cssText='display:flex;flex-direction:column;gap:1px;flex-shrink:0';
+    const upBtn=document.createElement('button');
+    upBtn.textContent='▲'; upBtn.title='上移一层（更靠前/上层）';
+    upBtn.className='btn btn-ghost';
+    upBtn.style.cssText='padding:0 4px;font-size:8px;line-height:1;height:13px;min-height:13px';
+    upBtn.disabled = idx === S.layers.length-1;
+    upBtn.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(idx<S.layers.length-1){
+        [S.layers[idx],S.layers[idx+1]]=[S.layers[idx+1],S.layers[idx]];
+        renderLayerRoles();
+      }
+    });
+    const downBtn=document.createElement('button');
+    downBtn.textContent='▼'; downBtn.title='下移一层（更靠后/下层）';
+    downBtn.className='btn btn-ghost';
+    downBtn.style.cssText='padding:0 4px;font-size:8px;line-height:1;height:13px;min-height:13px';
+    downBtn.disabled = idx === 0;
+    downBtn.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(idx>0){
+        [S.layers[idx],S.layers[idx-1]]=[S.layers[idx-1],S.layers[idx]];
+        renderLayerRoles();
+      }
+    });
+    orderBox.appendChild(upBtn);
+    orderBox.appendChild(downBtn);
+
+    // Opacity slider
+    const opWrap=document.createElement('div');
+    opWrap.style.cssText='display:flex;align-items:center;gap:4px;flex-shrink:0;width:90px';
+    const opSlider=document.createElement('input');
+    opSlider.type='range'; opSlider.min='0'; opSlider.max='100'; opSlider.step='1';
+    opSlider.value = l.opacity!==undefined?l.opacity:100;
+    opSlider.style.cssText='flex:1;accent-color:var(--accent);height:4px';
+    const opLabel=document.createElement('span');
+    opLabel.style.cssText='font-size:10px;color:var(--text3);width:30px;text-align:right;flex-shrink:0';
+    opLabel.textContent=opSlider.value+'%';
+    opSlider.addEventListener('input',e=>{
+      l.opacity=parseInt(e.target.value);
+      opLabel.textContent=l.opacity+'%';
+    });
+    opWrap.appendChild(opSlider);
+    opWrap.appendChild(opLabel);
+
+    row.appendChild(orderBox);
     row.appendChild(thumb);
     row.appendChild(name);
+    row.appendChild(opWrap);
     row.appendChild(sel);
     el.appendChild(row);
   });
@@ -24374,66 +24424,69 @@ async function renderSize(sz){
   out.width=sz.w; out.height=sz.h;
   const ctx=out.getContext('2d');
 
-  // 1. Background layer
-  const bgLayer = S.layers.find(l=>l.role==='bg');
-  const bgSrc = bgLayer&&bgLayer.canvas ? bgLayer.canvas : S.src.canvas;
-  drawCover(ctx, bgSrc, 0,0, sz.w, sz.h, 'center','center');
-
-  // 2. Decoration layers (behind product)
-  S.layers.filter(l=>l.role==='deco').forEach(l=>{
-    if(!l.canvas)return;
-    // scale proportionally
-    const sx=sz.w/S.src.w, sy=sz.h/S.src.h;
-    ctx.drawImage(l.canvas, l.x*sx, l.y*sy, l.w*sx, l.h*sy);
-  });
-
-  // 3. Product layer → product zone
-  const productLayer=S.layers.find(l=>l.role==='product');
+  const demoW=sz.demoImg?sz.demoImg.width:sz.w;
+  const demoH=sz.demoImg?sz.demoImg.height:sz.h;
   const productZone=sz.zones.find(z=>z.type==='product');
-  if(productLayer&&productLayer.canvas){
-    if(productZone){
-      // cover into zone with specified align
-      const demoW=sz.demoImg?sz.demoImg.width:sz.w;
-      const demoH=sz.demoImg?sz.demoImg.height:sz.h;
-      const zx=productZone.x/demoW*sz.w;
-      const zy=productZone.y/demoH*sz.h;
-      const zw=productZone.w/demoW*sz.w;
-      const zh=productZone.h/demoH*sz.h;
-      drawCover(ctx, productLayer.canvas, zx,zy, zw,zh, productZone.alignX||'center', productZone.alignY||'center');
-    } else {
-      // no zone: place at proportional position
-      const sx=sz.w/S.src.w,sy=sz.h/S.src.h;
-      ctx.drawImage(productLayer.canvas, productLayer.x*sx, productLayer.y*sy, productLayer.w*sx, productLayer.h*sy);
-    }
-  }
-
-  // 4. Title layer → title zone
-  const titleLayer=S.layers.find(l=>l.role==='title');
   const titleZone=sz.zones.find(z=>z.type==='title');
-  if(titleLayer&&titleLayer.canvas){
-    if(titleZone){
-      const demoW=sz.demoImg?sz.demoImg.width:sz.w;
-      const demoH=sz.demoImg?sz.demoImg.height:sz.h;
-      const zx=titleZone.x/demoW*sz.w;
-      const zy=titleZone.y/demoH*sz.h;
-      const zw=titleZone.w/demoW*sz.w;
-      const zh=titleZone.h/demoH*sz.h;
-      // fit by width, align top of zone
-      const srcW=titleLayer.canvas.width||titleLayer.w||1;
-      const srcH=titleLayer.canvas.height||titleLayer.h||1;
-      const sc=Math.min(zw/srcW, zh/srcH);
-      const dw=srcW*sc, dh=srcH*sc;
-      ctx.drawImage(titleLayer.canvas, zx+(zw-dw)/2, zy, dw, dh);
-    } else {
-      const sx=sz.w/S.src.w,sy=sz.h/S.src.h;
-      ctx.drawImage(titleLayer.canvas, titleLayer.x*sx, titleLayer.y*sy, titleLayer.w*sx, titleLayer.h*sy);
+
+  // Iterate layers in their array order (index 0 = bottom-most, drawn first)
+  for(const l of S.layers){
+    if(l.role==='none' || !l.canvas) continue;
+    const op = (l.opacity!==undefined ? l.opacity : 100) / 100;
+    if(op <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = op;
+
+    if(l.role==='bg'){
+      // Cover entire canvas, equal scale + center-crop
+      drawCover(ctx, l.canvas, 0,0, sz.w, sz.h, 'center','center');
+
+    } else if(l.role==='product'){
+      if(productZone){
+        // Zone indicates POSITION + approximate SIZE only.
+        // Product is scaled proportionally (contain) to roughly match zone size,
+        // anchored per align point. Cropping only happens at canvas edges.
+        const zx=productZone.x/demoW*sz.w;
+        const zy=productZone.y/demoH*sz.h;
+        const zw=productZone.w/demoW*sz.w;
+        const zh=productZone.h/demoH*sz.h;
+        drawContainAnchored(ctx, l.canvas, zx,zy,zw,zh, productZone.alignX||'center', productZone.alignY||'center');
+      } else {
+        // No zone: place at proportional position from source, natural scale
+        const sx=sz.w/S.src.w, sy=sz.h/S.src.h;
+        ctx.drawImage(l.canvas, l.x*sx, l.y*sy, l.w*sx, l.h*sy);
+      }
+
+    } else if(l.role==='title'){
+      if(titleZone){
+        const zx=titleZone.x/demoW*sz.w;
+        const zy=titleZone.y/demoH*sz.h;
+        const zw=titleZone.w/demoW*sz.w;
+        const zh=titleZone.h/demoH*sz.h;
+        // fit entirely within zone (contain), centered
+        const srcW=l.canvas.width||l.w||1;
+        const srcH=l.canvas.height||l.h||1;
+        const sc=Math.min(zw/srcW, zh/srcH);
+        const dw=srcW*sc, dh=srcH*sc;
+        ctx.drawImage(l.canvas, zx+(zw-dw)/2, zy+(zh-dh)/2, dw, dh);
+      } else {
+        const sx=sz.w/S.src.w, sy=sz.h/S.src.h;
+        ctx.drawImage(l.canvas, l.x*sx, l.y*sy, l.w*sx, l.h*sy);
+      }
+
+    } else if(l.role==='deco'){
+      // Proportional follow based on source/output ratio
+      const sx=sz.w/S.src.w, sy=sz.h/S.src.h;
+      ctx.drawImage(l.canvas, l.x*sx, l.y*sy, l.w*sx, l.h*sy);
     }
+
+    ctx.restore();
   }
 
   return out;
 }
 
-// drawCover: draw src into dst rect with cover behavior + align point
+// drawCover: fill dst rect completely (may crop), align controls which part is kept
 function drawCover(ctx, src, dx,dy, dw,dh, alignX='center', alignY='center'){
   if(!src||src.width===0) return;
   const sw=src.width, sh=src.height;
@@ -24455,6 +24508,32 @@ function drawCover(ctx, src, dx,dy, dw,dh, alignX='center', alignY='center'){
   ctx.clip();
   ctx.drawImage(src, dx-ox, dy-oy, scaledW, scaledH);
   ctx.restore();
+}
+
+// drawContainAnchored: scale src proportionally to roughly fit the (dw,dh) box
+// (using the larger-fit "contain" rule based on the box's aspect vs src aspect),
+// then position the scaled image so its anchor point (per alignX/alignY) lines up
+// with the corresponding edge/center of the box. No clipping to the box —
+// only the canvas itself crops if the image extends past it.
+function drawContainAnchored(ctx, src, dx,dy,dw,dh, alignX='center', alignY='center'){
+  if(!src||src.width===0) return;
+  const sw=src.width, sh=src.height;
+  // contain: scale so the image fits within the box without overflowing it
+  const sc=Math.min(dw/sw, dh/sh);
+  const scaledW=sw*sc, scaledH=sh*sc;
+
+  let px;
+  if(alignX==='left')        px = dx;
+  else if(alignX==='right')  px = dx + dw - scaledW;
+  else                        px = dx + (dw - scaledW)/2;
+
+  let py;
+  if(alignY==='top')         py = dy;
+  else if(alignY==='bottom') py = dy + dh - scaledH;
+  else                        py = dy + (dh - scaledH)/2;
+
+  // No ctx.clip() — canvas bounds naturally crop if image goes outside
+  ctx.drawImage(src, px, py, scaledW, scaledH);
 }
 
 // ═══════════════════════════════════════════════════════
