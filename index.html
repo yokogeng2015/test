@@ -24451,42 +24451,42 @@ async function renderSize(sz){
       drawCover(ctx, l.canvas, 0,0, sz.w, sz.h, 'center','center');
 
     } else if(l.role==='product'){
+      const trimmed = getTrimmedCanvas(l);
       if(productZone){
         // Zone indicates POSITION + approximate SIZE only.
-        // Product is scaled proportionally (contain) to roughly match zone size,
-        // anchored per align point. Cropping only happens at canvas edges.
+        // Product (trimmed of transparent padding) is scaled proportionally (contain)
+        // to roughly match zone size, anchored per align point. Cropping only at canvas edges.
         const zx=productZone.x/demoW*sz.w;
         const zy=productZone.y/demoH*sz.h;
         const zw=productZone.w/demoW*sz.w;
         const zh=productZone.h/demoH*sz.h;
-        drawContainAnchored(ctx, l.canvas, zx,zy,zw,zh, productZone.alignX||'center', productZone.alignY||'center');
+        drawContainAnchored(ctx, trimmed.canvas, zx,zy,zw,zh, productZone.alignX||'center', productZone.alignY||'center');
       } else {
-        // No zone: place at proportional position from source, natural scale
-        const sx=sz.w/S.src.w, sy=sz.h/S.src.h;
-        ctx.drawImage(l.canvas, l.x*sx, l.y*sy, l.w*sx, l.h*sy);
+        // No zone: uniform scale (no stretch), positioned at proportional location
+        const scale=Math.min(sz.w/S.src.w, sz.h/S.src.h);
+        ctx.drawImage(trimmed.canvas, (l.x+trimmed.x)*scale, (l.y+trimmed.y)*scale, trimmed.w*scale, trimmed.h*scale);
       }
 
     } else if(l.role==='title'){
+      const trimmed = getTrimmedCanvas(l);
       if(titleZone){
         const zx=titleZone.x/demoW*sz.w;
         const zy=titleZone.y/demoH*sz.h;
         const zw=titleZone.w/demoW*sz.w;
         const zh=titleZone.h/demoH*sz.h;
-        // fit entirely within zone (contain), centered
-        const srcW=l.canvas.width||l.w||1;
-        const srcH=l.canvas.height||l.h||1;
-        const sc=Math.min(zw/srcW, zh/srcH);
-        const dw=srcW*sc, dh=srcH*sc;
-        ctx.drawImage(l.canvas, zx+(zw-dw)/2, zy+(zh-dh)/2, dw, dh);
+        // fit entirely within zone (contain), centered — uniform scale, no stretch
+        const sc=Math.min(zw/trimmed.w, zh/trimmed.h);
+        const dw=trimmed.w*sc, dh=trimmed.h*sc;
+        ctx.drawImage(trimmed.canvas, zx+(zw-dw)/2, zy+(zh-dh)/2, dw, dh);
       } else {
-        const sx=sz.w/S.src.w, sy=sz.h/S.src.h;
-        ctx.drawImage(l.canvas, l.x*sx, l.y*sy, l.w*sx, l.h*sy);
+        const scale=Math.min(sz.w/S.src.w, sz.h/S.src.h);
+        ctx.drawImage(trimmed.canvas, (l.x+trimmed.x)*scale, (l.y+trimmed.y)*scale, trimmed.w*scale, trimmed.h*scale);
       }
 
     } else if(l.role==='deco'){
-      // Proportional follow based on source/output ratio
-      const sx=sz.w/S.src.w, sy=sz.h/S.src.h;
-      ctx.drawImage(l.canvas, l.x*sx, l.y*sy, l.w*sx, l.h*sy);
+      // Uniform scale (no stretch), positioned proportionally
+      const scale=Math.min(sz.w/S.src.w, sz.h/S.src.h);
+      ctx.drawImage(l.canvas, l.x*scale, l.y*scale, l.w*scale, l.h*scale);
     }
 
     ctx.restore();
@@ -24495,7 +24495,48 @@ async function renderSize(sz){
   return out;
 }
 
-// drawCover: fill dst rect completely (may crop), align controls which part is kept
+// getTrimmedCanvas: returns {canvas, x, y, w, h} where the canvas is cropped to
+// the bounding box of non-transparent pixels (with x,y = offset within original layer).
+// Result is cached on the layer object (l._trimmed) since this is somewhat expensive.
+function getTrimmedCanvas(l){
+  if(l._trimmed) return l._trimmed;
+  const src = l.canvas;
+  const w = src.width, h = src.height;
+  if(w===0 || h===0){
+    return l._trimmed = {canvas: src, x:0, y:0, w, h};
+  }
+  let imgData;
+  try{
+    imgData = src.getContext('2d').getImageData(0,0,w,h).data;
+  }catch(e){
+    // CORS or other issue — fall back to untrimmed
+    return l._trimmed = {canvas: src, x:0, y:0, w, h};
+  }
+  let minX=w, minY=h, maxX=-1, maxY=-1;
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const a = imgData[(y*w+x)*4+3];
+      if(a>0){
+        if(x<minX)minX=x; if(x>maxX)maxX=x;
+        if(y<minY)minY=y; if(y>maxY)maxY=y;
+      }
+    }
+  }
+  if(maxX<0){
+    // fully transparent
+    return l._trimmed = {canvas: src, x:0, y:0, w, h};
+  }
+  const tw=maxX-minX+1, th=maxY-minY+1;
+  if(minX===0 && minY===0 && tw===w && th===h){
+    return l._trimmed = {canvas: src, x:0, y:0, w, h};
+  }
+  const tc=document.createElement('canvas');
+  tc.width=tw; tc.height=th;
+  tc.getContext('2d').drawImage(src, minX,minY,tw,th, 0,0,tw,th);
+  return l._trimmed = {canvas:tc, x:minX, y:minY, w:tw, h:th};
+}
+
+
 function drawCover(ctx, src, dx,dy, dw,dh, alignX='center', alignY='center'){
   if(!src||src.width===0) return;
   const sw=src.width, sh=src.height;
