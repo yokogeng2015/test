@@ -162,10 +162,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .zt .ztd{color:var(--text3);cursor:pointer;padding:0 2px;font-size:13px}.zt .ztd:hover{color:var(--red)}
 
 /* demo upzone inline */
-.demo-upzone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:.15s;width:100%}
+.demo-upzone{border:1.5px dashed var(--border2);border-radius:var(--r);cursor:pointer;transition:.15s;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box}
 .demo-upzone:hover{border-color:var(--accent);background:var(--accent-bg)}
 .demo-upzone input{display:none}
 .demo-upzone p{font-size:11px;color:var(--text2);margin-top:4px}
+.demo-upzone .uz-dim{font-size:10px;color:var(--text3);margin-top:2px}
 
 /* ── Results ── */
 .results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
@@ -336,6 +337,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <input type="file" id="demoUpzoneInput" accept=".png,.jpg,.jpeg">
               <div style="font-size:24px;opacity:.3">🖼</div>
               <p>上传此尺寸的 demo 参考图</p>
+              <p class="uz-dim" id="uzDim"></p>
               <p style="font-size:10px;color:var(--text3)">jpg / png 标注图</p>
             </div>
             <div class="canvas-wrap" id="canvasWrap" style="display:none">
@@ -369,10 +371,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           </div>
 
           <div class="coords-grid">
-            <div class="field"><label>X</label><input type="number" id="zX" readonly></div>
-            <div class="field"><label>Y</label><input type="number" id="zY" readonly></div>
-            <div class="field"><label>宽</label><input type="number" id="zW" readonly></div>
-            <div class="field"><label>高</label><input type="number" id="zH" readonly></div>
+            <div class="field"><label>X</label><input type="number" id="zX" min="0"></div>
+            <div class="field"><label>Y</label><input type="number" id="zY" min="0"></div>
+            <div class="field"><label>宽</label><input type="number" id="zW" min="1"></div>
+            <div class="field"><label>高</label><input type="number" id="zH" min="1"></div>
           </div>
 
           <!-- Align picker (product/deco/title) -->
@@ -895,7 +897,9 @@ function activateSize(sz){
     loadDemoCanvas(sz.demoImg);
   } else {
     $('canvasWrap').style.display='none';
-    $('demoUpzone').style.display='block';
+    $('demoUpzone').style.display='flex';
+    // size the dashed upload box to preview the output's aspect ratio
+    sizeUpzoneToAspect(sz.w, sz.h);
   }
   clearSelRect();
   // refresh layer-match dropdown for the currently selected zone type
@@ -1139,6 +1143,21 @@ setupDemoUpload($('demoFileInput'),handleDemoFile);
 $('demoUpzone').addEventListener('click',()=>$('demoUpzoneInput').click());
 $('changeDemoBtn').addEventListener('click',()=>$('demoFileInput').click());
 
+// Size the dashed upload box to preview the output size's aspect ratio,
+// so before uploading the user can already see the rough proportions/shape.
+function sizeUpzoneToAspect(w,h){
+  const uz=$('demoUpzone');
+  const body=$('demoPanelBody');
+  const maxW=(body.clientWidth-32)||520;
+  const maxH=500;
+  const ratio=w/h;
+  let boxW=maxW, boxH=boxW/ratio;
+  if(boxH>maxH){ boxH=maxH; boxW=boxH*ratio; }
+  uz.style.width=Math.round(boxW)+'px';
+  uz.style.height=Math.round(boxH)+'px';
+  $('uzDim').textContent=`目标尺寸 ${w}×${h}px`;
+}
+
 function loadDemoCanvas(imgCanvas){
   $('demoUpzone').style.display='none';
   $('canvasWrap').style.display='inline-block';
@@ -1164,16 +1183,20 @@ let selEl=null;
 
 cw.addEventListener('mousedown',e=>{
   if(!S.activeSize||!S.activeSize.demoImg)return;
+  e.preventDefault();
   S.drawing=true;
   const r=getCanvasRect();
   S.dragStart={x:e.clientX-r.left,y:e.clientY-r.top};
   S.curSel=null;
   removeSelEl();
 });
-cw.addEventListener('mousemove',e=>{
+// Track on document so fast drags that leave the canvas area still register.
+document.addEventListener('mousemove',e=>{
   if(!S.drawing)return;
   const r=getCanvasRect();
-  const ex=e.clientX-r.left,ey=e.clientY-r.top;
+  // clamp to canvas bounds so the box can't run away off-screen
+  const ex=Math.max(0,Math.min(r.width, e.clientX-r.left));
+  const ey=Math.max(0,Math.min(r.height,e.clientY-r.top));
   const x=Math.min(S.dragStart.x,ex),y=Math.min(S.dragStart.y,ey);
   const w=Math.abs(ex-S.dragStart.x),h=Math.abs(ey-S.dragStart.y);
   const sc=S.demoScale;
@@ -1181,8 +1204,7 @@ cw.addEventListener('mousemove',e=>{
   updateSelEl(x,y,w,h);
   updateCoordFields();
 });
-cw.addEventListener('mouseup',()=>{S.drawing=false});
-cw.addEventListener('mouseleave',()=>{S.drawing=false});
+document.addEventListener('mouseup',()=>{S.drawing=false});
 
 function getCanvasRect(){
   return $('demoCanvas').getBoundingClientRect();
@@ -1209,6 +1231,22 @@ function updateCoordFields(){
   if(!d)return;
   $('zX').value=d.x;$('zY').value=d.y;$('zW').value=d.w;$('zH').value=d.h;
 }
+
+// Manual fine-tuning via the X/Y/宽/高 number inputs — keeps S.curSel and the
+// on-canvas selection box in sync with typed values.
+function syncSelFromInputs(){
+  const x=parseInt($('zX').value)||0;
+  const y=parseInt($('zY').value)||0;
+  const w=parseInt($('zW').value)||0;
+  const h=parseInt($('zH').value)||0;
+  if(w<=0||h<=0) return;
+  S.curSel={x,y,w,h};
+  const sc=S.demoScale;
+  updateSelEl(x*sc, y*sc, w*sc, h*sc);
+}
+['zX','zY','zW','zH'].forEach(id=>{
+  $(id).addEventListener('input', syncSelFromInputs);
+});
 $('clearSelBtn').addEventListener('click',clearSelRect);
 
 // ═══════════════════════════════════════════════════════
