@@ -245,13 +245,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn btn-sm" id="afCancel">取消</button>
       </div>
     </div>
-    <div style="display:flex;gap:6px;margin-top:8px">
-      <button class="btn btn-ghost btn-sm" id="connectFileBtn" style="flex:1" title="选择本地配置JSON文件（如git仓库里的 entry-tool-sizes.json）">📂 连接配置文件</button>
-      <button class="btn btn-ghost btn-sm" id="saveFileBtn" style="flex:1" disabled title="写回已连接的配置文件">💾 保存</button>
+    <div style="font-size:10px;color:var(--text3);margin-top:8px">配置同步到 GitHub</div>
+    <div style="display:flex;gap:6px;margin-top:4px">
+      <input type="text" id="ghToken" placeholder="GitHub Token (写入需要)" style="flex:1;background:var(--bg4);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:4px 7px;font-size:11px">
+    </div>
+    <div style="display:flex;gap:6px;margin-top:4px">
+      <button class="btn btn-ghost btn-sm" id="ghLoadBtn" style="flex:1" title="从GitHub仓库读取 entry-tool-sizes.json">⬇ 从GitHub读取</button>
+      <button class="btn btn-ghost btn-sm" id="ghSaveBtn" style="flex:1" title="写入GitHub仓库 entry-tool-sizes.json（需Token）">⬆ 保存到GitHub</button>
     </div>
     <div id="fileStatus" style="font-size:10px;color:var(--text3);margin-top:4px"></div>
-    <div style="display:flex;gap:6px;margin-top:4px">
-      <button class="btn btn-ghost btn-sm" id="exportConfigBtn" style="flex:1" title="导出为JSON文件下载（不支持文件句柄的浏览器可用此方式）">⬇ 下载配置</button>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <button class="btn btn-ghost btn-sm" id="exportConfigBtn" style="flex:1" title="导出为JSON文件下载">⬇ 下载配置</button>
       <button class="btn btn-ghost btn-sm" id="importConfigBtn" style="flex:1" title="从本地选择并导入一次性JSON">⬆ 导入文件</button>
       <input type="file" id="importConfigInput" accept=".json" style="display:none">
     </div>
@@ -976,46 +980,95 @@ function applyConfigData(data){
   if(S.activeSize) activateSize(S.activeSize);
 }
 
-// ── File System Access API (Chrome/Edge): connect a local file once,
-// then "保存" writes back to it directly — perfect for a file inside your git repo.
-let configFileHandle = null;
-const fsApiSupported = 'showOpenFilePicker' in window;
+// ── GitHub-backed config storage ──────────────────────────────────────────
+// Reads via raw.githubusercontent.com (no auth needed for public repos).
+// Writes via the GitHub Contents API (requires a Personal Access Token with
+// 'repo' or 'contents:write' scope — entered in the token field, kept only
+// in localStorage on this browser, never sent anywhere except api.github.com).
+const GH = {
+  owner: 'yokogeng2015',
+  repo: 'test',
+  path: 'entry-tool-sizes.json',
+  branch: 'main',
+};
 
-async function connectConfigFile(){
-  if(!fsApiSupported){
-    showAlert('当前浏览器不支持直连本地文件（请用 Chrome/Edge），改用下方"下载/导入文件"', 'alertMain');
-    return;
-  }
+// restore saved token
+$('ghToken').value = localStorage.getItem('gh_token') || '';
+$('ghToken').addEventListener('change', e=>{
+  localStorage.setItem('gh_token', e.target.value.trim());
+});
+
+let ghFileSha = null; // needed for updates via Contents API
+
+async function ghLoadConfig(){
+  setSt('正在从GitHub读取…');
   try{
-    const [handle] = await window.showOpenFilePicker({
-      types:[{description:'JSON', accept:{'application/json':['.json']}}],
-      excludeAcceptAllOption:false,
-    });
-    configFileHandle = handle;
-    const file = await handle.getFile();
-    const text = await file.text();
-    if(text.trim()){
-      applyConfigData(JSON.parse(text));
-      setSt(`已连接并读取 ${handle.name}`, true);
-    } else {
-      setSt(`已连接 ${handle.name}（空文件，保存时将写入当前配置）`, true);
+    const url = `https://raw.githubusercontent.com/${GH.owner}/${GH.repo}/${GH.branch}/${GH.path}?t=${Date.now()}`;
+    const res = await fetch(url, {cache:'no-store'});
+    if(!res.ok){
+      if(res.status===404){
+        setSt('GitHub上暂无配置文件，可直接配置后点"保存到GitHub"创建', true);
+        $('fileStatus').textContent = `${GH.owner}/${GH.repo}/${GH.path}（尚不存在）`;
+        return;
+      }
+      throw new Error('HTTP '+res.status);
     }
-    $('fileStatus').textContent = '已连接：' + handle.name;
-    $('saveFileBtn').disabled = false;
+    const text = await res.text();
+    if(text.trim()) applyConfigData(JSON.parse(text));
+    $('fileStatus').textContent = `已读取：${GH.owner}/${GH.repo}/${GH.path}`;
+    setSt('已从GitHub加载配置', true);
   }catch(err){
-    if(err.name !== 'AbortError') showAlert('连接文件失败：'+err.message, 'alertMain');
+    showAlert('从GitHub读取失败：'+err.message, 'alertMain');
+    setSt('读取失败');
   }
 }
 
-async function saveConfigFile(){
-  if(!configFileHandle) return;
+async function ghSaveConfig(){
+  const token = $('ghToken').value.trim();
+  if(!token){
+    showAlert('请先填写 GitHub Token（需要 repo 写入权限）', 'alertMain');
+    return;
+  }
+  setSt('正在写入GitHub…');
   try{
-    const writable = await configFileHandle.createWritable();
-    await writable.write(JSON.stringify(buildConfigData(), null, 2));
-    await writable.close();
-    setSt(`已保存到 ${configFileHandle.name}`, true);
+    const apiUrl = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}`;
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/vnd.github+json',
+    };
+
+    // get current sha (required for updates; omit for first-time create)
+    let sha = ghFileSha;
+    if(sha === null){
+      const getRes = await fetch(apiUrl+`?ref=${GH.branch}`, {headers});
+      if(getRes.ok){ const j = await getRes.json(); sha = j.sha; }
+    }
+
+    const json = JSON.stringify(buildConfigData(), null, 2);
+    const content = btoa(unescape(encodeURIComponent(json))); // UTF-8 safe base64
+
+    const body = {
+      message: `更新入口图尺寸配置 ${new Date().toISOString().slice(0,19)}`,
+      content,
+      branch: GH.branch,
+    };
+    if(sha) body.sha = sha;
+
+    const putRes = await fetch(apiUrl, {
+      method:'PUT', headers:{...headers,'Content-Type':'application/json'},
+      body: JSON.stringify(body),
+    });
+    if(!putRes.ok){
+      const errJson = await putRes.json().catch(()=>({}));
+      throw new Error(errJson.message || ('HTTP '+putRes.status));
+    }
+    const result = await putRes.json();
+    ghFileSha = result.content && result.content.sha;
+    $('fileStatus').textContent = `已保存：${GH.owner}/${GH.repo}/${GH.path}`;
+    setSt('已写入GitHub仓库', true);
   }catch(err){
-    showAlert('保存失败：'+err.message, 'alertMain');
+    showAlert('写入GitHub失败：'+err.message, 'alertMain');
+    setSt('保存失败');
   }
 }
 
@@ -1043,8 +1096,8 @@ function importConfig(file){
   reader.readAsText(file);
 }
 
-$('connectFileBtn').addEventListener('click', connectConfigFile);
-$('saveFileBtn').addEventListener('click', saveConfigFile);
+$('ghLoadBtn').addEventListener('click', ghLoadConfig);
+$('ghSaveBtn').addEventListener('click', ghSaveConfig);
 $('exportConfigBtn').addEventListener('click', exportConfig);
 $('importConfigBtn').addEventListener('click', ()=>$('importConfigInput').click());
 $('importConfigInput').addEventListener('change', e=>{
@@ -1617,6 +1670,7 @@ function showAlert(msg,id){
 
 // init
 renderSizes();
+ghLoadConfig(); // auto-load on open
 </script>
 </body>
 </html>
