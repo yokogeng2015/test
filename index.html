@@ -6,7 +6,6 @@
 <title>入口图生成工具 v2</title>
 <script src="./ag-psd.min.js"></script>
 <style>
-/* ── [样式部分：采用现代 CSS 变量和 Flex 弹性布局构建的暗黑科技风界面] ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#16171a;--bg2:#1e1f24;--bg3:#26272e;--bg4:#2e303a;--bg5:#363840;
@@ -23,7 +22,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
 
-/* ── 布局布局 ── */
+/* ── Layout ── */
 .app{display:flex;flex:1;overflow:hidden}
 .sidebar{width:280px;min-width:280px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
@@ -31,12 +30,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .workspace{flex:1;overflow:auto;padding:20px}
 .statusbar{height:26px;background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:16px;font-size:11px;color:var(--text3)}
 
-/* ── 侧边栏栏目 ── */
+/* ── Sidebar ── */
 .sb-section{padding:12px}
 .sb-section+.sb-section{border-top:1px solid var(--border)}
 .sb-title{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px}
 
-/* ── 拖拽上传区域 ── */
+/* ── Upload zone ── */
 .upzone{border:1.5px dashed var(--border2);border-radius:var(--rl);padding:16px;text-align:center;cursor:pointer;transition:.15s;background:var(--bg3)}
 .upzone:hover,.upzone.over{border-color:var(--accent);background:var(--accent-bg)}
 .upzone input{display:none}
@@ -44,7 +43,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .upzone p{font-size:11px;color:var(--text2)}
 .upzone strong{color:var(--accent-l)}
 
-/* ── 解析出来的图层列表条目 ── */
+/* ── Layers ── */
 .layer-item{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:var(--r);cursor:pointer;margin-bottom:2px;border:1px solid transparent;transition:.1s}
 .layer-item:hover{background:var(--bg4)}
 .li-thumb{width:32px;height:32px;border-radius:4px;background:var(--bg5);border:1px solid var(--border);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
@@ -53,13 +52,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .role-sel{background:var(--bg5);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 5px;font-size:11px;cursor:pointer;flex-shrink:0}
 .role-sel option{background:var(--bg3)}
 
-/* 不同图层角色对应的视觉颜色前缀 */
+/* role colors */
 .role-bg .li-name::before{content:'BG ';color:var(--blue);font-size:10px;font-weight:600}
 .role-product .li-name::before{content:'产品 ';color:var(--green);font-size:10px;font-weight:600}
 .role-title .li-name::before{content:'文字 ';color:var(--orange);font-size:10px;font-weight:600}
 .role-deco .li-name::before{content:'装饰 ';color:var(--accent-l);font-size:10px;font-weight:600}
 
-/* ── 预设输出尺寸列表 ── */
+/* ── Sizes ── */
 .size-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:var(--r);cursor:pointer;border:1px solid transparent;margin-bottom:3px;transition:.1s;background:var(--bg3)}
 .size-item:hover{border-color:var(--border2)}
 .size-item.active{border-color:var(--accent);background:var(--accent-bg)}
@@ -68,7 +67,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .si-name{flex:1;font-size:12px;font-weight:500}
 .si-dim{font-size:10px;color:var(--text3)}
 
-/* ── 通用按钮组件 ── */
+/* ── Buttons ── */
 .btn{border:1px solid var(--border2);background:var(--bg4);color:var(--text);border-radius:var(--r);padding:6px 12px;font-size:13px;cursor:pointer;transition:.1s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .btn:hover{background:var(--bg5);border-color:var(--border3)}
 .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
@@ -80,16 +79,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn-danger{color:var(--red);border-color:rgba(226,75,75,.25)}
 .btn-danger:hover{background:var(--red-bg)}
 
-/* ── 顶部步骤切换 ── */
+/* ── Steps ── */
 .steps{display:flex;align-items:center;gap:0;margin-right:auto}
 .step-btn{padding:5px 14px;font-size:13px;border-radius:var(--r);cursor:pointer;color:var(--text3);border:none;background:transparent;transition:.1s;position:relative}
 .step-btn.active{color:var(--accent-l);background:var(--accent-bg)}
 .step-btn .step-num{font-size:10px;font-weight:700;margin-right:4px;opacity:.6}
 
-/* ── 面板切换 ── */
+/* ── Panes ── */
 .pane{display:none}.pane.active{display:block}
 
-/* ── 步骤 1: 图层角色分配说明 ── */
+/* ── Step1: Layer role assignment ── */
 .role-guide{background:var(--bg3);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:16px}
 .role-guide p{font-size:12px;color:var(--text2);line-height:1.7}
 .role-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
@@ -100,7 +99,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .rt-deco{background:var(--accent-bg);color:var(--accent-l)}
 .rt-none{background:var(--bg4);color:var(--text3)}
 
-/* ── 步骤 2: 尺寸及参考图框选面板 ── */
+/* ── Step2: Size config ── */
 .size-config-wrap{display:flex;gap:20px;align-items:flex-start}
 .demo-panel{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;min-width:0}
 .demo-panel-header{padding:9px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)}
@@ -108,7 +107,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .demo-empty{text-align:center;color:var(--text3);font-size:12px;padding:40px}
 .demo-empty .de-icon{font-size:32px;opacity:.3;margin-bottom:6px}
 
-/* Canvas 参考图交互区与选框高亮样式 */
+/* canvas drawing */
 .canvas-wrap{position:relative;display:inline-block;cursor:crosshair;user-select:none}
 .canvas-wrap canvas{display:block}
 .sel-rect{position:absolute;border:2px dashed rgba(255,255,255,.7);background:rgba(255,255,255,.05);pointer-events:none}
@@ -125,7 +124,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .zl-safe{background:rgba(255,255,255,.2);color:#fff}
 .zl-deco{background:var(--accent);color:#fff}
 
-/* ── 右侧区域属性编辑面板 ── */
+/* ── Zone editor panel ── */
 .zone-panel{width:220px;min-width:220px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:14px}
 .zp-title{font-size:13px;font-weight:600;margin-bottom:12px}
 .zp-hint{font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:10px;background:var(--bg3);padding:8px;border-radius:var(--r)}
@@ -145,13 +144,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .coords-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .field select option{background:var(--bg3)}
 
-/* 九宫格对齐点/锚点选择器 */
+/* align picker */
 .align-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:4px}
 .align-btn{aspect-ratio:1;border:1px solid var(--border2);background:var(--bg4);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3);transition:.1s}
 .align-btn:hover{border-color:var(--border3)}
 .align-btn.on{background:var(--accent-bg);border-color:var(--accent);color:var(--accent-l)}
 
-/* 已经保存的框选区域列表 */
+/* zone list */
 .zone-list{margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
 .zl-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .zt{display:flex;align-items:center;gap:5px;padding:4px 6px;background:var(--bg3);border-radius:5px;margin-bottom:3px;font-size:11px;cursor:pointer;border:1px solid transparent}
@@ -162,38 +161,39 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .zt .ztn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .zt .ztd{color:var(--text3);cursor:pointer;padding:0 2px;font-size:13px}.zt .ztd:hover{color:var(--red)}
 
-/* 参考图上传区样式 */
-.demo-upzone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:.15s;width:100%}
+/* demo upzone inline */
+.demo-upzone{border:1.5px dashed var(--border2);border-radius:var(--r);cursor:pointer;transition:.15s;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box}
 .demo-upzone:hover{border-color:var(--accent);background:var(--accent-bg)}
 .demo-upzone input{display:none}
 .demo-upzone p{font-size:11px;color:var(--text2);margin-top:4px}
+.demo-upzone .uz-dim{font-size:10px;color:var(--text3);margin-top:2px}
 
-/* ── 步骤 3: 最终图片展示网格 ── */
+/* ── Results ── */
 .results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
 .res-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
 .res-card canvas{width:100%;display:block}
 .res-card-foot{padding:8px 10px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .res-name{font-size:12px;font-weight:500}.res-dim{font-size:10px;color:var(--text3)}
 
-/* 手动新增尺寸表单 */
+/* ── Add size form ── */
 .add-form{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;margin-top:6px;display:none}
 .add-form.open{display:block}
 .af-row{display:flex;gap:5px;margin-bottom:5px}
 .af-row input{flex:1;background:var(--bg4);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:4px 7px;font-size:12px}
 .af-row input::placeholder{color:var(--text3)}
 
-/* 缺省空白提示 */
+/* ── Empty ── */
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center;color:var(--text3);gap:8px}
 .empty .ei{font-size:36px;opacity:.25}
 .empty p{font-size:12px;line-height:1.7}
 
-/* 警告/成功弹窗提示 */
+/* ── Alert ── */
 .alert{padding:7px 11px;border-radius:var(--r);font-size:12px;margin-top:6px;display:none;line-height:1.5}
 .alert.show{display:block}
 .alert-warn{background:var(--orange-bg);border:1px solid rgba(240,160,48,.3);color:var(--orange)}
 .alert-ok{background:var(--green-bg);border:1px solid rgba(62,207,142,.3);color:var(--green)}
 
-/* 其他杂项 */
+/* misc */
 .dot-ok{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block}
 .dot-idle{width:6px;height:6px;border-radius:50%;background:var(--text3);display:inline-block}
 .tag{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:500}
@@ -202,6 +202,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </head>
 <body>
 
+<!-- ══ Topbar ══ -->
 <div class="topbar" style="border-bottom:1px solid var(--border)">
   <span style="font-size:14px;font-weight:600;color:var(--text);margin-right:8px;">入口图生成工具</span>
   <div class="steps">
@@ -214,8 +215,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="app">
 
+<!-- ══ Sidebar ══ -->
 <div class="sidebar">
 
+  <!-- PSD upload -->
   <div class="sb-section">
     <div class="sb-title">源文件 (PSD / PNG)</div>
     <div class="upzone" id="upzone">
@@ -227,11 +230,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div id="alertMain" class="alert alert-warn"></div>
   </div>
 
+  <!-- Sizes -->
   <div class="sb-section" style="flex:1;overflow-y:auto;overflow-x:hidden">
     <div class="sb-title">输出尺寸</div>
     <div id="sizeList"></div>
     <button class="btn btn-ghost btn-sm btn-full" id="addSizeBtn" style="margin-top:4px">＋ 新增尺寸</button>
-    
     <div class="add-form" id="addForm">
       <div class="af-row"><input id="afName" placeholder="名称"></div>
       <div class="af-row">
@@ -243,17 +246,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn btn-sm" id="afCancel">取消</button>
       </div>
     </div>
-    
     <div style="font-size:10px;color:var(--text3);margin-top:8px">配置同步到 GitHub</div>
     <div style="display:flex;gap:6px;margin-top:4px">
-      <input type="text" id="ghToken" placeholder="GitHub Token (自动加载代码中的默认值)" style="width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:4px 7px;font-size:11px">
+      <input type="text" id="ghToken" placeholder="GitHub Token (写入需要)" style="flex:1;background:var(--bg4);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:4px 7px;font-size:11px">
     </div>
     <div style="display:flex;gap:6px;margin-top:4px">
-      <button class="btn btn-ghost btn-sm" id="ghLoadBtn" style="flex:1" title="免Token自动从GitHub读取公开配置">⬇ 从GitHub读取</button>
-      <button class="btn btn-ghost btn-sm" id="ghSaveBtn" style="flex:1" title="通过Token保存当前配置到GitHub">⬆ 保存到GitHub</button>
+      <button class="btn btn-ghost btn-sm" id="ghLoadBtn" style="flex:1" title="从GitHub仓库读取 entry-tool-sizes.json">⬇ 从GitHub读取</button>
+      <button class="btn btn-ghost btn-sm" id="ghSaveBtn" style="flex:1" title="写入GitHub仓库 entry-tool-sizes.json（需Token）">⬆ 保存到GitHub</button>
     </div>
     <div id="fileStatus" style="font-size:10px;color:var(--text3);margin-top:4px"></div>
-    
     <div style="display:flex;gap:6px;margin-top:6px">
       <button class="btn btn-ghost btn-sm" id="exportConfigBtn" style="flex:1" title="导出为JSON文件下载">⬇ 下载配置</button>
       <button class="btn btn-ghost btn-sm" id="importConfigBtn" style="flex:1" title="从本地选择并导入一次性JSON">⬆ 导入文件</button>
@@ -261,15 +262,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
 
+  <!-- Generate footer -->
   <div class="sb-section">
     <div id="sbStatus" style="font-size:11px;color:var(--text3);margin-bottom:6px">等待上传源文件</div>
     <button class="btn btn-full btn-sm" id="dlAllBtn" style="display:none">⬇ 全部下载</button>
   </div>
 </div>
 
+<!-- ══ Main ══ -->
 <div class="main">
 <div class="workspace">
 
+  <!-- Step 1: Layer roles -->
   <div class="pane active" id="pane1">
     <div class="empty" id="s1empty">
       <div class="ei">🎨</div>
@@ -289,9 +293,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <span style="font-size:11px;color:var(--text3)">按比例跟随</span>
         </div>
       </div>
-      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">↑ 列表上方 = 图层叠放在上方（先看见） ↓ 下方 = 在底层</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">↑ 列表上方 = 图层叠放在上方（先看见）　↓ 下方 = 在底层</div>
       <div id="layerRoleList"></div>
 
+      <!-- Composite preview -->
       <div style="margin-top:16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden">
         <div style="padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)">合成预览</div>
         <div style="padding:12px;display:flex;align-items:center;justify-content:center;background:#111;min-height:120px">
@@ -305,6 +310,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
 
+  <!-- Step 2: Size config -->
   <div class="pane" id="pane2">
     <div class="empty" id="s2empty">
       <div class="ei">📐</div>
@@ -316,6 +322,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <span id="s2SizeDim" style="font-size:11px;color:var(--text3);margin-left:6px"></span>
       </div>
       <div class="size-config-wrap">
+        <!-- Demo panel -->
         <div class="demo-panel">
           <div class="demo-panel-header">
             <span id="demoPanelTitle">参考图</span>
@@ -325,10 +332,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <input type="file" id="demoFileInput" accept=".png,.jpg,.jpeg" style="display:none">
           </div>
           <div class="demo-panel-body" id="demoPanelBody">
+            <!-- upload prompt or canvas -->
             <div class="demo-upzone" id="demoUpzone">
               <input type="file" id="demoUpzoneInput" accept=".png,.jpg,.jpeg">
               <div style="font-size:24px;opacity:.3">🖼</div>
               <p>上传此尺寸的 demo 参考图</p>
+              <p class="uz-dim" id="uzDim"></p>
               <p style="font-size:10px;color:var(--text3)">jpg / png 标注图</p>
             </div>
             <div class="canvas-wrap" id="canvasWrap" style="display:none">
@@ -337,6 +346,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           </div>
         </div>
 
+        <!-- Zone panel -->
         <div class="zone-panel">
           <div class="zp-title">区域定义</div>
           <div class="zp-hint">在参考图上拖拽框选区域。<br>「主产品」框只示意大致位置和大小——产品会按等比缩放放入，超出画布部分才会被裁掉。</div>
@@ -349,6 +359,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <div class="type-btn tb-safe" data-type="safe">安全区</div>
           </div>
 
+          <!-- Layer match select (product/title/deco only) -->
           <div class="field" id="layerMatchSection">
             <label>对应图层</label>
             <select id="zoneLayerTag"><option value="">-- 自动匹配 --</option></select>
@@ -360,12 +371,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           </div>
 
           <div class="coords-grid">
-            <div class="field"><label>X</label><input type="number" id="zX" readonly></div>
-            <div class="field"><label>Y</label><input type="number" id="zY" readonly></div>
-            <div class="field"><label>宽</label><input type="number" id="zW" readonly></div>
-            <div class="field"><label>高</label><input type="number" id="zH" readonly></div>
+            <div class="field"><label>X</label><input type="number" id="zX" min="0"></div>
+            <div class="field"><label>Y</label><input type="number" id="zY" min="0"></div>
+            <div class="field"><label>宽</label><input type="number" id="zW" min="1"></div>
+            <div class="field"><label>高</label><input type="number" id="zH" min="1"></div>
           </div>
 
+          <!-- Align picker (product/deco/title) -->
           <div id="alignSection">
             <div class="field" style="margin-bottom:4px"><label>锚点（等比缩放后的定位基准）</label></div>
             <div class="align-picker" id="alignPicker">
@@ -393,6 +405,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
 
+  <!-- Step 3: Results -->
   <div class="pane" id="pane3">
     <div class="empty" id="s3empty">
       <div class="ei">⚡</div>
@@ -403,41 +416,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
 
-</div><div class="statusbar">
+</div><!-- /workspace -->
+
+<div class="statusbar">
   <span id="stDot" class="dot-idle"></span>
   <span id="stText">等待上传</span>
   <span style="flex:1"></span>
   <span id="stExtra"></span>
 </div>
-</div></div><script>
+</div><!-- /main -->
+</div><!-- /app -->
+
+<script>
 // ═══════════════════════════════════════════════════════
-// 【核心系统状态管理变量】
+// STATE
 // ═══════════════════════════════════════════════════════
 const S = {
-  src: null,           // 源画布信息 {canvas, w, h}
-  layers: [],          // 解析出的图层数组 [{id,name,role,canvas,x,y,w,h,visible}]
-  sizes: [],           // 正在维护的尺寸模版
-  activeSize: null,    // 步骤2当前选中的尺寸
-  drawType: 'product', // 正在框选的区域属性 (产品、文字、背景等)
-  alignX: 'center',    // 锚点 X 轴
-  alignY: 'center',    // 锚点 Y 轴
-  drawing: false,      // 鼠标是否正在拖拽选框中
-  dragStart: null,     // 拖拽起点坐标
-  curSel: null,        // 存放当前拉出来的选框数据（对应参考图的绝对像素坐标）
-  demoScale: 1,        // 参考图渲染在工作区时的缩放系数
-  results: [],         // 最终批量处理生成的画布结果
+  src: null,           // {canvas, w, h}
+  layers: [],          // [{id,name,role,canvas,x,y,w,h,visible}]
+  sizes: [],
+  activeSize: null,
+  drawType: 'product',
+  alignX: 'center',
+  alignY: 'center',
+  drawing: false,
+  dragStart: null,
+  curSel: null,        // {x,y,w,h} in demo image coords
+  demoScale: 1,
+  results: [],
 };
 
-// ⚙️ 默认硬编码及自动固化配置项（在这里填入你真正的私有 Token）
-const MY_DEFAULT_TOKEN = "你的ghp_开头的真正Token贴在这里";
-const STORAGE_KEY = 'gh_token_cached';
-
-// 如果浏览器缓存里还没有存过 Token，就默认把上面这个写入缓存
-if (!localStorage.getItem(STORAGE_KEY) && MY_DEFAULT_TOKEN && MY_DEFAULT_TOKEN !== "你的ghp_开头的真正Token贴在这里") {
-  localStorage.setItem(STORAGE_KEY, MY_DEFAULT_TOKEN);
-}
-
-// 预设默认需要被裁切适配的四款主流规格
 const DEFAULT_SIZES = [
   {name:'首页 Banner',w:750,h:360},
   {name:'频道入口 2:1',w:375,h:188},
@@ -445,15 +453,13 @@ const DEFAULT_SIZES = [
   {name:'竖版 3:4',w:375,h:500},
 ].map(s=>({...s,id:uid(),checked:true,demoImg:null,zones:[],layerMap:{bg:null,product:null,title:null}}));
 
-// 默认基础 GitHub 路径配置
-const GH = { owner: 'yokogeng2015', repo: 'test', path: 'entry-tool-sizes.json', branch: 'main' };
+S.sizes = DEFAULT_SIZES;
 
-// 工具函数：快捷获取 DOM 节点和快速计算短哈希唯一ID
 const $ = id => document.getElementById(id);
 function uid(){ return Math.random().toString(36).slice(2,8) }
 
 // ═══════════════════════════════════════════════════════
-// 【源文件批量读取加载与图像提取】
+// UPLOAD SOURCE
 // ═══════════════════════════════════════════════════════
 const upzone = $('upzone'), fileInput = $('fileInput');
 upzone.addEventListener('click',()=>fileInput.click());
@@ -462,7 +468,6 @@ upzone.addEventListener('dragover',e=>{e.preventDefault();upzone.classList.add('
 upzone.addEventListener('dragleave',()=>upzone.classList.remove('over'));
 upzone.addEventListener('drop',e=>{e.preventDefault();upzone.classList.remove('over');handleSrc(e.dataTransfer.files[0])});
 
-// 分析传入文件
 async function handleSrc(file){
   if(!file) return;
   const ext = file.name.split('.').pop().toLowerCase();
@@ -472,7 +477,6 @@ async function handleSrc(file){
   else showAlert('请上传 .psd / .png / .jpg 文件','alertMain');
 }
 
-// 兼容单张平面图加载
 async function loadImgFile(file){
   const url = URL.createObjectURL(file);
   const img = await imgFromUrl(url);
@@ -483,16 +487,23 @@ async function loadImgFile(file){
   setSt(`图片已加载 ${c.width}×${c.height}`,true);
 }
 
-// 深度逆向提取 Photoshop 图层
 async function loadPSD(file){
+  // ag-psd is inlined, exposed as window.agPsd
   if(typeof agPsd === 'undefined'){
     showAlert('PSD解析库加载异常，请刷新页面重试', 'alertMain');
     setSt('库加载失败');
     return;
   }
+
   setSt('正在解析PSD…');
   try{
     const buf = await file.arrayBuffer();
+
+    // ag-psd auto-detects browser environment and uses document.createElement('canvas')
+    // No need to call initializeCanvas in browser context
+
+    // readPsd returns a structured Psd object
+    // useImageData:false => layer.canvas is populated (not layer.imageData)
     const psd = agPsd.readPsd(buf, {
       skipLayerImageData: false,
       skipCompositeImageData: false,
@@ -501,9 +512,11 @@ async function loadPSD(file){
     });
 
     setSt('PSD解析完成，正在提取图层…');
-    const psdW = psd.width, psdH = psd.height;
-    S.layers = [];
 
+    const psdW = psd.width, psdH = psd.height;
+
+    // Extract layers first so we can use them for fallback composite
+    S.layers = [];
     function walkLayers(layers){
       if(!layers) return;
       for(const layer of layers){
@@ -526,24 +539,34 @@ async function loadPSD(file){
       }
     }
     walkLayers(psd.children);
-    S.layers.reverse(); 
+    S.layers.reverse(); // bottom→top draw order
 
+    // Build composite canvas
     let compCanvas;
     if(psd.canvas){
       compCanvas = psd.canvas;
     } else {
+      // Fallback: draw all visible layers bottom→top
       compCanvas = document.createElement('canvas');
       compCanvas.width = psdW; compCanvas.height = psdH;
       const cctx = compCanvas.getContext('2d');
-      cctx.fillStyle = '#ffffff'; cctx.fillRect(0, 0, psdW, psdH);
+      cctx.fillStyle = '#ffffff';
+      cctx.fillRect(0, 0, psdW, psdH);
       for(const l of S.layers){
-        if(l.canvas && !l.hidden){ cctx.drawImage(l.canvas, l.x, l.y); }
+        if(l.canvas && !l.hidden){
+          cctx.drawImage(l.canvas, l.x, l.y);
+        }
       }
     }
     S.src = {canvas: compCanvas, w: psdW, h: psdH};
-    if(S.layers.length === 0){ showAlert('未提取到图层，已退化为单图合并预览模式', 'alertMain'); }
+
+    if(S.layers.length === 0){
+      showAlert('未提取到图层，但合成图已加载，可用单图模式继续', 'alertMain');
+    }
+
     onSrcLoaded();
     setSt(`✓ PSD已解析：${S.layers.length} 个图层，${psdW}×${psdH}px`, true);
+
   }catch(e){
     console.error('PSD load error:', e);
     showAlert(`PSD解析失败：${e.message}。请在PS中另存时勾选"最大兼容"，或改用导出PNG`, 'alertMain');
@@ -560,7 +583,7 @@ function onSrcLoaded(){
 }
 
 // ═══════════════════════════════════════════════════════
-// 【步骤 1 — 图层角色划分与高级文本无损替换】
+// STEP 1 — Layer roles
 // ═══════════════════════════════════════════════════════
 const ROLES = [
   {v:'none',  label:'忽略'},
@@ -570,6 +593,7 @@ const ROLES = [
   {v:'deco',  label:'装饰'},
 ];
 
+// Generate a default tag like "产品1","产品2" / "文字1"... based on existing layers of same role
 function autoTag(role){
   const labelMap = {product:'产品', title:'文字', deco:'装饰', bg:'背景'};
   const base = labelMap[role] || '元素';
@@ -580,438 +604,1111 @@ function autoTag(role){
 }
 
 function renderLayerRoles(){
-  const el = $('layerRoleList'); el.innerHTML=''; const n = S.layers.length;
+  const el = $('layerRoleList');
+  el.innerHTML='';
+  const n = S.layers.length;
+  // S.layers[0] = bottom-most (drawn first). Display top-of-stack first (idx n-1) at top of list.
   for(let displayIdx=0; displayIdx<n; displayIdx++){
-    const idx = n - 1 - displayIdx; const l = S.layers[idx];
-    const row = document.createElement('div'); row.className = 'layer-item role-'+l.role; row.id = 'lr-'+l.id; row.style.flexWrap='wrap';
+    const idx = n - 1 - displayIdx; // actual index into S.layers
+    const l = S.layers[idx];
 
-    const thumb = document.createElement('div'); thumb.className='li-thumb';
+    const row = document.createElement('div');
+    row.className = 'layer-item role-'+l.role;
+    row.id = 'lr-'+l.id;
+    row.style.flexWrap='wrap';
+
+    const thumb = document.createElement('div');
+    thumb.className='li-thumb';
     if(l.canvas){
-      const tc=document.createElement('canvas'); tc.width=32; tc.height=32;
-      const tcx=tc.getContext('2d'); tcx.fillStyle='#2a2a2a'; tcx.fillRect(0,0,32,32);
+      const tc=document.createElement('canvas');
+      tc.width=32;tc.height=32;
+      const tcx=tc.getContext('2d');
+      tcx.fillStyle='#2a2a2a';tcx.fillRect(0,0,32,32);
       const sc=Math.min(32/Math.max(l.w||1,1),32/Math.max(l.h||1,1));
       const ox=(32-l.w*sc)/2,oy=(32-l.h*sc)/2;
       if(l.canvas.width>0) tcx.drawImage(l.canvas,l.x||0,l.y||0,l.w||l.canvas.width,l.h||l.canvas.height,ox,oy,l.w*sc,l.h*sc);
       thumb.appendChild(tc);
     }
 
-    const sel=document.createElement('select'); sel.className='role-sel';
+    const sel=document.createElement('select');
+    sel.className='role-sel';
     ROLES.forEach(r=>{
-      const o=document.createElement('option'); o.value=r.v; o.textContent=r.label;
-      if(r.v===l.role) o.selected=true; sel.appendChild(o);
+      const o=document.createElement('option');
+      o.value=r.v; o.textContent=r.label;
+      if(r.v===l.role) o.selected=true;
+      sel.appendChild(o);
     });
     sel.addEventListener('change',e=>{
-      l.role=e.target.value; row.className='layer-item role-'+l.role;
-      if(['product','title','deco'].includes(l.role) && !l.tag){ l.tag = autoTag(l.role); }
+      l.role=e.target.value;
+      row.className='layer-item role-'+l.role;
+      // assign a default tag if switching into a tagged role and none set
+      if(['product','title','deco'].includes(l.role) && !l.tag){
+        l.tag = autoTag(l.role);
+      }
       renderLayerRoles();
     });
 
-    const name=document.createElement('span'); name.className='li-name'; name.title=l.name; name.textContent=l.name;
+    const name=document.createElement('span');
+    name.className='li-name';
+    name.title=l.name;
+    name.textContent=l.name;
 
-    const tagInput=document.createElement('input'); tagInput.type='text'; tagInput.value = l.tag || ''; tagInput.placeholder='标签';
+    // Tag input — lets user define custom matching keys: 产品1 / 产品2 / 文字1 ...
+    const tagInput=document.createElement('input');
+    tagInput.type='text';
+    tagInput.value = l.tag || '';
+    tagInput.placeholder='标签';
+    tagInput.title='自定义标签，用于在尺寸配置中匹配对应的框选区域，如：产品1 / 文字2';
     tagInput.style.cssText='width:54px;flex-shrink:0;background:var(--bg5);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 5px;font-size:11px';
     tagInput.style.display = (l.role==='none') ? 'none' : 'block';
     tagInput.addEventListener('change',e=>{ l.tag = e.target.value.trim(); });
 
-    const orderBox=document.createElement('div'); orderBox.style.cssText='display:flex;flex-direction:column;gap:1px;flex-shrink:0';
-    const upBtn=document.createElement('button'); upBtn.textContent='▲'; upBtn.className='btn btn-ghost'; upBtn.style.cssText='padding:0 4px;font-size:8px;line-height:1;height:13px;min-height:13px';
-    upBtn.disabled = idx === n-1;
-    upBtn.addEventListener('click',e=>{ e.stopPropagation(); if(idx<n-1){ [S.layers[idx],S.layers[idx+1]]=[S.layers[idx+1],S.layers[idx]]; renderLayerRoles(); } });
-    const downBtn=document.createElement('button'); downBtn.textContent='▼'; downBtn.className='btn btn-ghost'; downBtn.style.cssText='padding:0 4px;font-size:8px;line-height:1;height:13px;min-height:13px';
-    downBtn.disabled = idx === 0;
-    downBtn.addEventListener('click',e=>{ e.stopPropagation(); if(idx>0){ [S.layers[idx],S.layers[idx-1]]=[S.layers[idx-1],S.layers[idx]]; renderLayerRoles(); } });
-    orderBox.appendChild(upBtn); orderBox.appendChild(downBtn);
+    // Reorder: ▲ = move toward top of stack (higher index in S.layers, shown higher in list)
+    //          ▼ = move toward bottom of stack (lower index, shown lower in list)
+    const orderBox=document.createElement('div');
+    orderBox.style.cssText='display:flex;flex-direction:column;gap:1px;flex-shrink:0';
+    const upBtn=document.createElement('button');
+    upBtn.textContent='▲'; upBtn.title='上移一层（更靠上/前）';
+    upBtn.className='btn btn-ghost';
+    upBtn.style.cssText='padding:0 4px;font-size:8px;line-height:1;height:13px;min-height:13px';
+    upBtn.disabled = idx === n-1; // already topmost
+    upBtn.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(idx<n-1){
+        [S.layers[idx],S.layers[idx+1]]=[S.layers[idx+1],S.layers[idx]];
+        renderLayerRoles();
+      }
+    });
+    const downBtn=document.createElement('button');
+    downBtn.textContent='▼'; downBtn.title='下移一层（更靠下/后）';
+    downBtn.className='btn btn-ghost';
+    downBtn.style.cssText='padding:0 4px;font-size:8px;line-height:1;height:13px;min-height:13px';
+    downBtn.disabled = idx === 0; // already bottommost
+    downBtn.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(idx>0){
+        [S.layers[idx],S.layers[idx-1]]=[S.layers[idx-1],S.layers[idx]];
+        renderLayerRoles();
+      }
+    });
+    orderBox.appendChild(upBtn);
+    orderBox.appendChild(downBtn);
 
-    const opWrap=document.createElement('div'); opWrap.style.cssText='display:flex;align-items:center;gap:4px;flex-shrink:0;width:90px';
-    const opSlider=document.createElement('input'); opSlider.type='range'; opSlider.min='0'; opSlider.max='100'; opSlider.step='1'; opSlider.value = l.opacity!==undefined?l.opacity:100; opSlider.style.cssText='flex:1;accent-color:var(--accent);height:4px';
-    const opLabel=document.createElement('span'); opLabel.style.cssText='font-size:10px;color:var(--text3);width:30px;text-align:right;flex-shrink:0'; opLabel.textContent=opSlider.value+'%';
-    opSlider.addEventListener('input',e=>{ l.opacity=parseInt(e.target.value); opLabel.textContent=l.opacity+'%'; });
-    opWrap.appendChild(opSlider); opWrap.appendChild(opLabel);
+    // Opacity slider
+    const opWrap=document.createElement('div');
+    opWrap.style.cssText='display:flex;align-items:center;gap:4px;flex-shrink:0;width:90px';
+    const opSlider=document.createElement('input');
+    opSlider.type='range'; opSlider.min='0'; opSlider.max='100'; opSlider.step='1';
+    opSlider.value = l.opacity!==undefined?l.opacity:100;
+    opSlider.style.cssText='flex:1;accent-color:var(--accent);height:4px';
+    const opLabel=document.createElement('span');
+    opLabel.style.cssText='font-size:10px;color:var(--text3);width:30px;text-align:right;flex-shrink:0';
+    opLabel.textContent=opSlider.value+'%';
+    opSlider.addEventListener('input',e=>{
+      l.opacity=parseInt(e.target.value);
+      opLabel.textContent=l.opacity+'%';
+    });
+    opWrap.appendChild(opSlider);
+    opWrap.appendChild(opLabel);
 
-    row.appendChild(orderBox); row.appendChild(thumb); row.appendChild(name); row.appendChild(tagInput); row.appendChild(opWrap); row.appendChild(sel);
+    row.appendChild(orderBox);
+    row.appendChild(thumb);
+    row.appendChild(name);
+    row.appendChild(tagInput);
+    row.appendChild(opWrap);
+    row.appendChild(sel);
 
-    const editBtn=document.createElement('button'); editBtn.className='btn btn-ghost btn-sm'; editBtn.textContent='✎ 文字'; editBtn.style.cssText='font-size:11px;padding:3px 8px;flex-shrink:0';
-    editBtn.style.display = l.role==='title' ? 'inline-flex' : 'none'; row.appendChild(editBtn); el.appendChild(row);
+    // Text-edit toggle (only meaningful for title-role layers)
+    const editBtn=document.createElement('button');
+    editBtn.className='btn btn-ghost btn-sm';
+    editBtn.textContent='✎ 文字';
+    editBtn.style.cssText='font-size:11px;padding:3px 8px;flex-shrink:0';
+    editBtn.style.display = l.role==='title' ? 'inline-flex' : 'none';
+    row.appendChild(editBtn);
 
-    const panel=document.createElement('div'); panel.style.cssText='display:none;width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px;margin:2px 0 6px;'; el.appendChild(panel);
+    el.appendChild(row);
+
+    // Text edit panel (collapsible)
+    const panel=document.createElement('div');
+    panel.style.cssText='display:none;width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px;margin:2px 0 6px;';
+    el.appendChild(panel);
 
     function buildTextPanel(){
-      panel.innerHTML=''; if(!l.textOverride) l.textOverride = {enabled:false, text:'', font:'', size:'', color:'#000000'}; const to = l.textOverride;
-      if(!to._inited){ try{ const tr = getTrimmedCanvas(l); if(!to.size) to.size = Math.round(tr.h * 0.8); if(!to.color) to.color = sampleDominantColor(tr.canvas) || '#000000'; }catch(e){} to._inited = true; }
-      const row1=document.createElement('div'); row1.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:6px';
-      const chk=document.createElement('input'); chk.type='checkbox'; chk.checked=!!to.enabled; chk.addEventListener('change',e=>{ to.enabled=e.target.checked; });
-      const chkLabel=document.createElement('span'); chkLabel.style.cssText='font-size:11px;color:var(--text2)'; chkLabel.textContent='启用文字替换（生成时用下方渲染替代原图层）';
+      panel.innerHTML='';
+      if(!l.textOverride) l.textOverride = {enabled:false, text:'', font:'', size:'', color:'#000000'};
+      const to = l.textOverride;
+
+      // auto-fill defaults from trimmed layer on first open
+      if(!to._inited){
+        try{
+          const tr = getTrimmedCanvas(l);
+          if(!to.size) to.size = Math.round(tr.h * 0.8); // rough cap-height estimate
+          if(!to.color) to.color = sampleDominantColor(tr.canvas) || '#000000';
+        }catch(e){}
+        to._inited = true;
+      }
+
+      const row1=document.createElement('div');
+      row1.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:6px';
+      const chk=document.createElement('input');
+      chk.type='checkbox'; chk.checked=!!to.enabled;
+      chk.addEventListener('change',e=>{ to.enabled=e.target.checked; });
+      const chkLabel=document.createElement('span');
+      chkLabel.style.cssText='font-size:11px;color:var(--text2)';
+      chkLabel.textContent='启用文字替换（生成时用下方设置渲染文字，替代原图层）';
       row1.appendChild(chk); row1.appendChild(chkLabel);
-      const ta=document.createElement('textarea'); ta.value=to.text||''; ta.placeholder='输入替换文字'; ta.rows=2; ta.style.cssText='width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;margin-bottom:6px;resize:vertical'; ta.addEventListener('input',e=>{ to.text=e.target.value; });
-      const row2=document.createElement('div'); row2.style.cssText='display:flex;gap:6px';
-      const fontInput=document.createElement('input'); fontInput.type='text'; fontInput.value=to.font||''; fontInput.placeholder='字体，如PingFang SC'; fontInput.style.cssText='flex:2;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12px'; fontInput.addEventListener('change',e=>{ to.font=e.target.value; });
-      const sizeInput=document.createElement('input'); sizeInput.type='number'; sizeInput.value=to.size||''; sizeInput.placeholder='字号'; sizeInput.style.cssText='width:90px;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12px'; sizeInput.addEventListener('change',e=>{ sizeInput.value=parseInt(e.target.value)||to.size; });
-      const colorInput=document.createElement('input'); colorInput.type='color'; colorInput.value=to.color||'#000000'; colorInput.style.cssText='width:36px;height:28px;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:2px;cursor:pointer'; colorInput.addEventListener('input',e=>{ to.color=e.target.value; });
-      const boldWrap=document.createElement('label'); boldWrap.style.cssText='display:flex;align-items:center;gap:3px;font-size:11px;color:var(--text2)';
-      const boldChk=document.createElement('input'); boldChk.type='checkbox'; boldChk.checked=!!to.bold; boldChk.addEventListener('change',e=>{ to.bold=e.target.checked; });
-      boldWrap.appendChild(boldChk); boldWrap.appendChild(document.createTextNode('加粗'));
-      row2.appendChild(fontInput); row2.appendChild(sizeInput); row2.appendChild(colorInput); row2.appendChild(boldWrap);
-      panel.appendChild(row1); panel.appendChild(ta); panel.appendChild(row2);
+
+      const ta=document.createElement('textarea');
+      ta.value=to.text||'';
+      ta.placeholder='输入要替换的文字，支持换行';
+      ta.rows=2;
+      ta.style.cssText='width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;margin-bottom:6px;resize:vertical;font-family:inherit';
+      ta.addEventListener('input',e=>{ to.text=e.target.value; });
+
+      const row2=document.createElement('div');
+      row2.style.cssText='display:flex;gap:6px';
+
+      const fontInput=document.createElement('input');
+      fontInput.type='text';
+      fontInput.value=to.font||'';
+      fontInput.placeholder='字体，如：PingFang SC, "Microsoft YaHei", sans-serif';
+      fontInput.style.cssText='flex:2;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12px';
+      fontInput.addEventListener('change',e=>{ to.font=e.target.value; });
+
+      const sizeInput=document.createElement('input');
+      sizeInput.type='number';
+      sizeInput.value=to.size||'';
+      sizeInput.placeholder='字号(原图px)';
+      sizeInput.title='字号按原图比例自动缩放到各输出尺寸';
+      sizeInput.style.cssText='width:90px;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12px';
+      sizeInput.addEventListener('change',e=>{ to.size=parseInt(e.target.value)||to.size; });
+
+      const colorInput=document.createElement('input');
+      colorInput.type='color';
+      colorInput.value=to.color||'#000000';
+      colorInput.style.cssText='width:36px;height:28px;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:2px;cursor:pointer';
+      colorInput.addEventListener('input',e=>{ to.color=e.target.value; });
+
+      const boldWrap=document.createElement('label');
+      boldWrap.style.cssText='display:flex;align-items:center;gap:3px;font-size:11px;color:var(--text2);white-space:nowrap';
+      const boldChk=document.createElement('input');
+      boldChk.type='checkbox'; boldChk.checked=!!to.bold;
+      boldChk.addEventListener('change',e=>{ to.bold=e.target.checked; });
+      boldWrap.appendChild(boldChk);
+      boldWrap.appendChild(document.createTextNode('加粗'));
+
+      row2.appendChild(fontInput);
+      row2.appendChild(sizeInput);
+      row2.appendChild(colorInput);
+      row2.appendChild(boldWrap);
+
+      const hint=document.createElement('div');
+      hint.style.cssText='font-size:10px;color:var(--text3);margin-top:6px;line-height:1.5';
+      hint.textContent='提示：字体名需与系统/网页可用字体一致才能正确显示；颜色已尝试从原图层取样，可手动调整。留空文字 = 使用原图层图像。';
+
+      panel.appendChild(row1);
+      panel.appendChild(ta);
+      panel.appendChild(row2);
+      panel.appendChild(hint);
     }
-    editBtn.addEventListener('click',()=>{ const open = panel.style.display!=='none'; panel.style.display = open ? 'none' : 'block'; if(!open) buildTextPanel(); });
+
+    editBtn.addEventListener('click',()=>{
+      const open = panel.style.display!=='none';
+      panel.style.display = open ? 'none' : 'block';
+      if(!open) buildTextPanel();
+    });
+
+    // keep edit button visibility in sync with role changes
+    sel.addEventListener('change',()=>{
+      editBtn.style.display = l.role==='title' ? 'inline-flex' : 'none';
+      tagInput.style.display = (l.role==='none') ? 'none' : 'block';
+      if(l.role!=='title') panel.style.display='none';
+    });
   }
 }
 
+// Sample a representative (most saturated/dark, non-transparent) color from a canvas —
+// used as a default text color guess when enabling text replacement.
 function sampleDominantColor(canvas){
   try{
-    const w=canvas.width,h=canvas.height; if(w===0||h===0) return null;
-    const data=canvas.getContext('2d').getImageData(0,0,w,h).data; let counts={};
-    for(let i=0;i<data.length;i+=4*7){ const a=data[i+3]; if(a<128) continue; const r=data[i],g=data[i+1],b=data[i+2]; const key=`${r>>4},${g>>4},${b>>4}`; counts[key]=(counts[key]||0)+1; }
-    let best=null,bestCount=0; for(const k in counts){ if(counts[k]>bestCount){bestCount=counts[k];best=k;} }
-    if(!best) return null; const [r,g,b]=best.split(',').map(v=>(parseInt(v)<<4)+8); return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+    const w=canvas.width,h=canvas.height;
+    if(w===0||h===0) return null;
+    const data=canvas.getContext('2d').getImageData(0,0,w,h).data;
+    const counts={};
+    for(let i=0;i<data.length;i+=4*7){ // sample every 7th pixel for speed
+      const a=data[i+3];
+      if(a<128) continue;
+      const r=data[i],g=data[i+1],b=data[i+2];
+      const key=`${r>>4},${g>>4},${b>>4}`; // bucket into 16-levels
+      counts[key]=(counts[key]||0)+1;
+    }
+    let best=null,bestCount=0;
+    for(const k in counts){ if(counts[k]>bestCount){bestCount=counts[k];best=k;} }
+    if(!best) return null;
+    const [r,g,b]=best.split(',').map(v=>(parseInt(v)<<4)+8);
+    return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
   }catch(e){ return null; }
 }
 
 function drawCompositePreview(){
-  const cv=$('previewCanvas'); if(!S.src) return; const maxW=600,maxH=280; const sc=Math.min(1,maxW/S.src.w,maxH/S.src.h);
-  cv.width=Math.round(S.src.w*sc); cv.height=Math.round(S.src.h*sc); cv.getContext('2d').drawImage(S.src.canvas,0,0,cv.width,cv.height);
+  const cv=$('previewCanvas');
+  if(!S.src) return;
+  const maxW=600,maxH=280;
+  const sc=Math.min(1,maxW/S.src.w,maxH/S.src.h);
+  cv.width=Math.round(S.src.w*sc);
+  cv.height=Math.round(S.src.h*sc);
+  cv.getContext('2d').drawImage(S.src.canvas,0,0,cv.width,cv.height);
 }
 
 // ═══════════════════════════════════════════════════════
-// 【步骤 2 — 尺寸模版列表与参考图上传管理】
+// SIZES
 // ═══════════════════════════════════════════════════════
 function renderSizes(){
-  const el=$('sizeList'); el.innerHTML='';
+  const el=$('sizeList');
+  el.innerHTML='';
   S.sizes.forEach(sz=>{
-    const row=document.createElement('div'); row.className='size-item'+(S.activeSize&&S.activeSize.id===sz.id?' active':'')+(sz.zones.length>0?' configured':'');
-    row.innerHTML=`<input type="checkbox" class="si-check" ${sz.checked?'checked':''}><span class="si-name">${sz.name}</span><span class="si-dim">${sz.w}×${sz.h}</span>`;
+    const row=document.createElement('div');
+    row.className='size-item'+(S.activeSize&&S.activeSize.id===sz.id?' active':'')+(sz.zones.length>0?' configured':'');
+    row.innerHTML=`
+      <input type="checkbox" class="si-check" ${sz.checked?'checked':''}>
+      <span class="si-name">${sz.name}</span>
+      <span class="si-dim">${sz.w}×${sz.h}</span>
+    `;
     row.querySelector('.si-check').addEventListener('change',e=>{sz.checked=e.target.checked;e.stopPropagation()});
-    row.addEventListener('click',e=>{ if(e.target.classList.contains('si-check'))return; activateSize(sz); goStep(2); });
+    row.addEventListener('click',e=>{
+      if(e.target.classList.contains('si-check'))return;
+      activateSize(sz);
+      goStep(2);
+    });
     el.appendChild(row);
   });
 }
 
 function activateSize(sz){
-  S.activeSize=sz; S.curSel=null; renderSizes(); renderZoneList();
-  $('s2SizeName').textContent=sz.name; $('s2SizeDim').textContent=sz.w+'×'+sz.h+'px';
-  $('s2empty').style.display='none'; $('s2content').style.display='block';
-  if(sz.demoImg){ loadDemoCanvas(sz.demoImg); } else { $('canvasWrap').style.display='none'; $('demoUpzone').style.display='block'; }
-  clearSelRect(); const activeTypeBtn=document.querySelector('.type-btn.on');
-  if(activeTypeBtn && ['product','title','deco'].includes(activeTypeBtn.dataset.type)){ populateLayerTagSelect(activeTypeBtn.dataset.type); }
+  S.activeSize=sz;
+  S.curSel=null;
+  renderSizes();
+  renderZoneList();
+  $('s2SizeName').textContent=sz.name;
+  $('s2SizeDim').textContent=sz.w+'×'+sz.h+'px';
+  $('s2empty').style.display='none';
+  $('s2content').style.display='block';
+  if(sz.demoImg){
+    loadDemoCanvas(sz.demoImg);
+  } else {
+    $('canvasWrap').style.display='none';
+    $('demoUpzone').style.display='flex';
+    // size the dashed upload box to preview the output's aspect ratio
+    sizeUpzoneToAspect(sz.w, sz.h);
+  }
+  clearSelRect();
+  // refresh layer-match dropdown for the currently selected zone type
+  const activeTypeBtn=document.querySelector('.type-btn.on');
+  if(activeTypeBtn && ['product','title','deco'].includes(activeTypeBtn.dataset.type)){
+    populateLayerTagSelect(activeTypeBtn.dataset.type);
+  }
 }
 
 // ═══════════════════════════════════════════════════════
-// 【免 Token 云端自动加载 ＆ Token 锁死更新持久化方案】
+// CONFIG (sizes + zones) — JSON, persisted to a local file (e.g. in your git repo)
 // ═══════════════════════════════════════════════════════
+// Schema per size (matches user-provided structure, with extra fields for
+// full round-trip: role/alignX/alignY/layerTag are tool-internal extensions):
+// {
+//   id, name, width, height,
+//   layers: [
+//     { id, key, type: "image"|"text", x, y, width, height,
+//       maxWidth?, fontSize?,            // for type:"text"
+//       role, alignX, alignY, layerTag } // internal extensions
+//   ]
+// }
 function buildConfigData(){
   return S.sizes.map(sz=>({
-    id: sz.id, name: sz.name, width: sz.w, height: sz.h,
-    layers: sz.zones.map(z=>({
-      id: z.id, key: z.layerTag || z.name, type: z.type==='title' ? 'text' : 'image',
-      x: z.x, y: z.y, width: z.w, height: z.h, role: z.type, alignX: z.alignX, alignY: z.alignY, layerTag: z.layerTag || ''
-    })),
+    id: sz.id,
+    name: sz.name,
+    width: sz.w,
+    height: sz.h,
+    layers: sz.zones.map(z=>{
+      const entry = {
+        id: z.id,
+        key: z.layerTag || z.name,
+        type: z.type==='title' ? 'text' : 'image',
+        x: z.x, y: z.y,
+        width: z.w, height: z.h,
+      };
+      if(z.type==='title'){
+        entry.maxWidth = z.w;
+        const layer = S.layers.find(l=>l.role==='title' && (l.tag===z.layerTag));
+        if(layer && layer.textOverride && layer.textOverride.size){
+          entry.fontSize = layer.textOverride.size;
+        }
+      }
+      entry.role = z.type;
+      entry.alignX = z.alignX;
+      entry.alignY = z.alignY;
+      entry.layerTag = z.layerTag || '';
+      return entry;
+    }),
     checked: sz.checked,
   }));
 }
 
 function applyConfigData(data){
-  if(!Array.isArray(data)) return;
+  if(!Array.isArray(data)) throw new Error('JSON 根节点应为数组');
   data.forEach(tpl=>{
     const zones = (tpl.layers||[]).map(entry=>({
-      id: entry.id || uid(), type: entry.role || (entry.type==='text' ? 'title' : 'image'),
-      name: entry.key || '区域', x: entry.x, y: entry.y, w: entry.width!==undefined?entry.width:0, h: entry.height!==undefined?entry.height:0,
-      alignX: entry.alignX || 'center', alignY: entry.alignY || 'center', layerTag: entry.layerTag || ''
+      id: entry.id || uid(),
+      type: entry.role || (entry.type==='text' ? 'title' : 'image'),
+      name: entry.key || '区域',
+      x: entry.x, y: entry.y,
+      w: entry.width!==undefined?entry.width:(entry.maxWidth||0),
+      h: entry.height!==undefined?entry.height:0,
+      alignX: entry.alignX || 'center',
+      alignY: entry.alignY || 'center',
+      layerTag: entry.layerTag || entry.key || '',
     }));
+
     let sz = S.sizes.find(s=>s.id===tpl.id) || S.sizes.find(s=>s.name===tpl.name);
-    if(sz){ sz.name = tpl.name; sz.w = tpl.width; sz.h = tpl.height; sz.zones = zones; if(tpl.checked!==undefined) sz.checked = tpl.checked; }
-    else { S.sizes.push({ id: tpl.id || uid(), name: tpl.name, w: tpl.width, h: tpl.height, checked: tpl.checked!==undefined?tpl.checked:true, demoImg: null, zones, layerMap: {} }); }
+    if(sz){
+      sz.name = tpl.name; sz.w = tpl.width; sz.h = tpl.height; sz.zones = zones;
+      if(tpl.checked!==undefined) sz.checked = tpl.checked;
+    } else {
+      S.sizes.push({
+        id: tpl.id || uid(), name: tpl.name, w: tpl.width, h: tpl.height,
+        checked: tpl.checked!==undefined?tpl.checked:true,
+        demoImg: null, zones, layerMap: {bg:null,product:null,title:null},
+      });
+    }
   });
-  renderSizes(); if(S.activeSize) activateSize(S.activeSize);
+  renderSizes();
+  if(S.activeSize) activateSize(S.activeSize);
 }
 
-// 免 Token 公开加载逻辑
-async function ghLoadConfig() {
-  setSt('正在自动从 GitHub 同步云端配置…');
-  const url = `https://raw.githubusercontent.com/${GH.owner}/${GH.repo}/${GH.branch}/${GH.path}?t=${Date.now()}`;
-  try {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) {
-      if (res.status === 404) {
-        $('fileStatus').textContent = "云端全新，已启用本地默认尺寸"; setSt('初始化完成', true);
-        S.sizes = JSON.parse(JSON.stringify(DEFAULT_SIZES)); renderSizes(); return;
+// ── GitHub-backed config storage ──────────────────────────────────────────
+// Reads via raw.githubusercontent.com (no auth needed for public repos).
+// Writes via the GitHub Contents API (requires a Personal Access Token with
+// 'repo' or 'contents:write' scope — entered in the token field, kept only
+// in localStorage on this browser, never sent anywhere except api.github.com).
+const GH = {
+  owner: 'yokogeng2015',
+  repo: 'test',
+  path: 'entry-tool-sizes.json',
+  branch: 'main',
+};
+
+// restore saved token
+$('ghToken').value = localStorage.getItem('gh_token') || '';
+$('ghToken').addEventListener('change', e=>{
+  localStorage.setItem('gh_token', e.target.value.trim());
+});
+
+let ghFileSha = null; // needed for updates via Contents API
+
+async function ghLoadConfig(){
+  setSt('正在从GitHub读取…');
+  try{
+    const url = `https://raw.githubusercontent.com/${GH.owner}/${GH.repo}/${GH.branch}/${GH.path}?t=${Date.now()}`;
+    const res = await fetch(url, {cache:'no-store'});
+    if(!res.ok){
+      if(res.status===404){
+        setSt('GitHub上暂无配置文件，可直接配置后点"保存到GitHub"创建', true);
+        $('fileStatus').textContent = `${GH.owner}/${GH.repo}/${GH.path}（尚不存在）`;
+        return;
       }
-      throw new Error('HTTP 状态: ' + res.status);
+      throw new Error('HTTP '+res.status);
     }
     const text = await res.text();
-    if (text.trim()) { S.sizes = []; applyConfigData(JSON.parse(text)); $('fileStatus').textContent = `已同步最新云端配置`; setSt('云端配置已加载', true); }
-  } catch (err) {
-    console.warn('云端同步失败，降级使用默认预设:', err.message); $('fileStatus').textContent = "网络异常，已载入本地预设"; setSt('已就绪', true);
-    if(S.sizes.length === 0) { S.sizes = JSON.parse(JSON.stringify(DEFAULT_SIZES)); renderSizes(); }
+    if(text.trim()) applyConfigData(JSON.parse(text));
+    $('fileStatus').textContent = `已读取：${GH.owner}/${GH.repo}/${GH.path}`;
+    setSt('已从GitHub加载配置', true);
+  }catch(err){
+    showAlert('从GitHub读取失败：'+err.message, 'alertMain');
+    setSt('读取失败');
   }
 }
 
-// 智能缓存过滤写入逻辑（处理 Bad credentials 失效重试机制）
-async function ghSaveConfig() {
-  let token = $('ghToken').value.trim() || localStorage.getItem(STORAGE_KEY) || '';
-  if (!token || token === "你的ghp_开头的真正Token贴在这里") {
-    token = prompt("请输入拥有该仓库写入权限的有效 GitHub Token:");
-    if (!token) { showAlert('保存已取消：未输入有效 Token', 'alertMain'); return; }
+async function ghSaveConfig(){
+  const token = $('ghToken').value.trim();
+  if(!token){
+    showAlert('请先填写 GitHub Token（需要 repo 写入权限）', 'alertMain');
+    return;
   }
+  setSt('正在写入GitHub…');
+  try{
+    const apiUrl = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}`;
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/vnd.github+json',
+    };
 
-  setSt('正在向 GitHub 写入配置…');
-  const apiUrl = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}`;
-  const headers = { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github+json' };
+    // get current sha (required for updates; omit for first-time create)
+    let sha = ghFileSha;
+    if(sha === null){
+      const getRes = await fetch(apiUrl+`?ref=${GH.branch}`, {headers});
+      if(getRes.ok){ const j = await getRes.json(); sha = j.sha; }
+    }
 
-  let sha = null;
-  try {
-    const getRes = await fetch(apiUrl+`?ref=${GH.branch}`, { headers });
-    if (getRes.status === 401 || getRes.status === 403) { throw new Error('AUTH_ERROR'); }
-    if (getRes.ok) { const j = await getRes.json(); sha = j.sha; }
-  } catch(e) {
-    if(e.message === 'AUTH_ERROR') { return handleTokenExpiry(); }
-  }
-
-  try {
     const json = JSON.stringify(buildConfigData(), null, 2);
-    const content = btoa(unescape(encodeURIComponent(json)));
-    const body = { message: `Update sizes config ${new Date().toISOString().slice(0,19)}`, content, branch: GH.branch };
+    const content = btoa(unescape(encodeURIComponent(json))); // UTF-8 safe base64
+
+    const body = {
+      message: `更新入口图尺寸配置 ${new Date().toISOString().slice(0,19)}`,
+      content,
+      branch: GH.branch,
+    };
     if(sha) body.sha = sha;
 
-    const putRes = await fetch(apiUrl, { method:'PUT', headers:{...headers,'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    
-    if (putRes.status === 401 || putRes.status === 403) { return handleTokenExpiry(); }
-    if(!putRes.ok) throw new Error('HTTP ' + putRes.status);
-
-    localStorage.setItem(STORAGE_KEY, token); $('ghToken').value = token;
-    $('fileStatus').textContent = `成功同步到云端：${GH.path}`; setSt('保存云端成功', true);
-    showAlert('配置已安全固化至云端', 'alertMain');
-  } catch(err) {
-    showAlert('保存失败: ' + err.message, 'alertMain'); setSt('写入失败');
-  }
-
-  function handleTokenExpiry() {
-    localStorage.removeItem(STORAGE_KEY); $('ghToken').value = '';
-    const newToken = prompt("Token 鉴权失败(Bad credentials)。它可能已过期或权限不足，请重新输入有效的 GitHub Token:");
-    if (newToken) { $('ghToken').value = newToken; localStorage.setItem(STORAGE_KEY, newToken); return ghSaveConfig(); }
-    else { showAlert('保存失败：Token 凭证失效', 'alertMain'); setSt('凭证失效'); }
+    const putRes = await fetch(apiUrl, {
+      method:'PUT', headers:{...headers,'Content-Type':'application/json'},
+      body: JSON.stringify(body),
+    });
+    if(!putRes.ok){
+      const errJson = await putRes.json().catch(()=>({}));
+      throw new Error(errJson.message || ('HTTP '+putRes.status));
+    }
+    const result = await putRes.json();
+    ghFileSha = result.content && result.content.sha;
+    $('fileStatus').textContent = `已保存：${GH.owner}/${GH.repo}/${GH.path}`;
+    setSt('已写入GitHub仓库', true);
+  }catch(err){
+    showAlert('写入GitHub失败：'+err.message, 'alertMain');
+    setSt('保存失败');
   }
 }
 
+// ── Fallback for browsers without File System Access API: download / one-shot import
 function exportConfig(){
-  const blob = new Blob([JSON.stringify(buildConfigData(), null, 2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'entry-tool-sizes.json'; a.click();
+  const json = JSON.stringify(buildConfigData(), null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'entry-tool-sizes.json';
+  a.click();
+  setSt('已下载配置 JSON', true);
 }
-$('ghLoadBtn').addEventListener('click', ghLoadConfig); $('ghSaveBtn').addEventListener('click', ghSaveConfig);
+
+function importConfig(file){
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      applyConfigData(JSON.parse(e.target.result));
+      setSt(`配置已导入（注意：demo 参考图需重新上传）`, true);
+    }catch(err){
+      showAlert('配置导入失败：'+err.message, 'alertMain');
+    }
+  };
+  reader.readAsText(file);
+}
+
+$('ghLoadBtn').addEventListener('click', ghLoadConfig);
+$('ghSaveBtn').addEventListener('click', ghSaveConfig);
 $('exportConfigBtn').addEventListener('click', exportConfig);
 $('importConfigBtn').addEventListener('click', ()=>$('importConfigInput').click());
-$('importConfigInput').addEventListener('change', e=>{ if(e.target.files[0]) { const reader = new FileReader(); reader.onload = ev=>{ applyConfigData(JSON.parse(ev.target.result)); }; reader.readAsText(e.target.files[0]); } e.target.value=''; });
+$('importConfigInput').addEventListener('change', e=>{
+  if(e.target.files[0]) importConfig(e.target.files[0]);
+  e.target.value='';
+});
+
 
 $('addSizeBtn').addEventListener('click',()=>$('addForm').classList.toggle('open'));
 $('afCancel').addEventListener('click',()=>$('addForm').classList.remove('open'));
 $('afConfirm').addEventListener('click',()=>{
-  const name=$('afName').value.trim(); const w=parseInt($('afW').value),h=parseInt($('afH').value); if(!name||!w||!h) return;
-  S.sizes.push({id:uid(),name,w,h,checked:true,demoImg:null,zones:[],layerMap:{}}); $('addForm').classList.remove('open'); $('afName').value='';$('afW').value='';$('afH').value=''; renderSizes();
+  const name=$('afName').value.trim();
+  const w=parseInt($('afW').value),h=parseInt($('afH').value);
+  if(!name||!w||!h){showAlert('请填写名称和宽高','alertMain');return}
+  S.sizes.push({id:uid(),name,w,h,checked:true,demoImg:null,zones:[],layerMap:{bg:null,product:null,title:null}});
+  $('addForm').classList.remove('open');
+  $('afName').value='';$('afW').value='';$('afH').value='';
+  renderSizes();
 });
 
 // ═══════════════════════════════════════════════════════
-// 【工作台交互：标注图载入及自适应渲染】
+// DEMO IMAGE
 // ═══════════════════════════════════════════════════════
-$('demoUpzoneInput').addEventListener('change', e=>loadDemo(e.target.files[0]));
-$('demoFileInput').addEventListener('change', e=>loadDemo(e.target.files[0]));
+function setupDemoUpload(inputEl,callback){
+  inputEl.addEventListener('change',e=>{ if(e.target.files[0]) callback(e.target.files[0]) });
+}
+function handleDemoFile(file){
+  if(!S.activeSize)return;
+  const url=URL.createObjectURL(file);
+  imgFromUrl(url).then(img=>{
+    const c=toCanvas(img);
+    S.activeSize.demoImg=c;
+    loadDemoCanvas(c);
+    renderSizes();
+  });
+}
+setupDemoUpload($('demoUpzoneInput'),handleDemoFile);
+setupDemoUpload($('demoFileInput'),handleDemoFile);
 $('demoUpzone').addEventListener('click',()=>$('demoUpzoneInput').click());
 $('changeDemoBtn').addEventListener('click',()=>$('demoFileInput').click());
 
-function loadDemo(file){
-  if(!file||!S.activeSize)return;
-  imgFromUrl(URL.createObjectURL(file)).then(img=>{ const c=toCanvas(img); S.activeSize.demoImg=c; loadDemoCanvas(c); renderSizes(); });
+// Size the dashed upload box to preview the output size's aspect ratio,
+// so before uploading the user can already see the rough proportions/shape.
+function sizeUpzoneToAspect(w,h){
+  const uz=$('demoUpzone');
+  const body=$('demoPanelBody');
+  const maxW=(body.clientWidth-32)||520;
+  const maxH=500;
+  const ratio=w/h;
+  let boxW=maxW, boxH=boxW/ratio;
+  if(boxH>maxH){ boxH=maxH; boxW=boxH*ratio; }
+  uz.style.width=Math.round(boxW)+'px';
+  uz.style.height=Math.round(boxH)+'px';
+  $('uzDim').textContent=`目标尺寸 ${w}×${h}px`;
 }
 
 function loadDemoCanvas(imgCanvas){
-  $('demoUpzone').style.display='none'; $('canvasWrap').style.display='inline-block';
-  const body=$('demoPanelBody'); const maxW=body.clientWidth-32||560; const maxH=500;
-  const sc=Math.min(1,maxW/imgCanvas.width,maxH/imgCanvas.height); S.demoScale=sc;
-  const cv=$('demoCanvas'); cv.width=Math.round(imgCanvas.width*sc); cv.height=Math.round(imgCanvas.height*sc);
-  cv.getContext('2d').drawImage(imgCanvas,0,0,cv.width,cv.height);
-  $('demoScaleInfo').textContent=`${imgCanvas.width}×${imgCanvas.height}  ${Math.round(sc*100)}%`; redrawDemoOverlays();
+  $('demoUpzone').style.display='none';
+  $('canvasWrap').style.display='inline-block';
+  const body=$('demoPanelBody');
+  const maxW=body.clientWidth-32||560;
+  const maxH=500;
+  const sc=Math.min(1,maxW/imgCanvas.width,maxH/imgCanvas.height);
+  S.demoScale=sc;
+  const cv=$('demoCanvas');
+  cv.width=Math.round(imgCanvas.width*sc);
+  cv.height=Math.round(imgCanvas.height*sc);
+  const ctx=cv.getContext('2d');
+  ctx.drawImage(imgCanvas,0,0,cv.width,cv.height);
+  $('demoScaleInfo').textContent=`${imgCanvas.width}×${imgCanvas.height}  ${Math.round(sc*100)}%`;
+  redrawDemoOverlays();
 }
 
 // ═══════════════════════════════════════════════════════
-// 【鼠标拉取矩形选区计算】
+// CANVAS DRAWING
 // ═══════════════════════════════════════════════════════
-const cw=$('canvasWrap'); let selEl=null;
+const cw=$('canvasWrap');
+let selEl=null;
+
 cw.addEventListener('mousedown',e=>{
-  if(!S.activeSize||!S.activeSize.demoImg)return; S.drawing=true; const r=getCanvasRect();
-  S.dragStart={x:e.clientX-r.left,y:e.clientY-r.top}; S.curSel=null; removeSelEl();
+  if(!S.activeSize||!S.activeSize.demoImg)return;
+  e.preventDefault();
+  S.drawing=true;
+  const r=getCanvasRect();
+  S.dragStart={x:e.clientX-r.left,y:e.clientY-r.top};
+  S.curSel=null;
+  removeSelEl();
 });
-cw.addEventListener('mousemove',e=>{
-  if(!S.drawing)return; const r=getCanvasRect(); const ex=e.clientX-r.left,ey=e.clientY-r.top;
-  const x=Math.min(S.dragStart.x,ex),y=Math.min(S.dragStart.y,ey); const w=Math.abs(ex-S.dragStart.x),h=Math.abs(ey-S.dragStart.y);
-  const sc=S.demoScale; S.curSel={x:Math.round(x/sc),y:Math.round(y/sc),w:Math.round(w/sc),h:Math.round(h/sc)};
-  updateSelEl(x,y,w,h); $('zX').value=S.curSel.x;$('zY').value=S.curSel.y;$('zW').value=S.curSel.w;$('zH').value=S.curSel.h;
+// Track on document so fast drags that leave the canvas area still register.
+document.addEventListener('mousemove',e=>{
+  if(!S.drawing)return;
+  const r=getCanvasRect();
+  // clamp to canvas bounds so the box can't run away off-screen
+  const ex=Math.max(0,Math.min(r.width, e.clientX-r.left));
+  const ey=Math.max(0,Math.min(r.height,e.clientY-r.top));
+  const x=Math.min(S.dragStart.x,ex),y=Math.min(S.dragStart.y,ey);
+  const w=Math.abs(ex-S.dragStart.x),h=Math.abs(ey-S.dragStart.y);
+  const sc=S.demoScale;
+  S.curSel={x:Math.round(x/sc),y:Math.round(y/sc),w:Math.round(w/sc),h:Math.round(h/sc)};
+  updateSelEl(x,y,w,h);
+  updateCoordFields();
 });
-window.addEventListener('mouseup',()=>{S.drawing=false});
-function getCanvasRect(){ return $('demoCanvas').getBoundingClientRect(); }
-function removeSelEl(){ if(selEl){selEl.remove();selEl=null;} }
-function clearSelRect(){ removeSelEl(); S.curSel=null; ['zX','zY','zW','zH'].forEach(id=>{$(id).value=''}); }
-function updateSelEl(x,y,w,h){ if(!selEl){ selEl=document.createElement('div'); selEl.className='sel-rect'; cw.appendChild(selEl); } selEl.style.left=x+'px';selEl.style.top=y+'px'; selEl.style.width=w+'px';selEl.style.height=h+'px'; }
+document.addEventListener('mouseup',()=>{S.drawing=false});
+
+function getCanvasRect(){
+  return $('demoCanvas').getBoundingClientRect();
+}
+function removeSelEl(){
+  if(selEl){selEl.remove();selEl=null;}
+}
+function clearSelRect(){
+  removeSelEl();
+  S.curSel=null;
+  ['zX','zY','zW','zH'].forEach(id=>{$(id).value=''});
+}
+function updateSelEl(x,y,w,h){
+  if(!selEl){
+    selEl=document.createElement('div');
+    selEl.className='sel-rect';
+    cw.appendChild(selEl);
+  }
+  selEl.style.left=x+'px';selEl.style.top=y+'px';
+  selEl.style.width=w+'px';selEl.style.height=h+'px';
+}
+function updateCoordFields(){
+  const d=S.curSel;
+  if(!d)return;
+  $('zX').value=d.x;$('zY').value=d.y;$('zW').value=d.w;$('zH').value=d.h;
+}
+
+// Manual fine-tuning via the X/Y/宽/高 number inputs — keeps S.curSel and the
+// on-canvas selection box in sync with typed values.
+function syncSelFromInputs(){
+  const x=parseInt($('zX').value)||0;
+  const y=parseInt($('zY').value)||0;
+  const w=parseInt($('zW').value)||0;
+  const h=parseInt($('zH').value)||0;
+  if(w<=0||h<=0) return;
+  S.curSel={x,y,w,h};
+  const sc=S.demoScale;
+  updateSelEl(x*sc, y*sc, w*sc, h*sc);
+}
+['zX','zY','zW','zH'].forEach(id=>{
+  $(id).addEventListener('input', syncSelFromInputs);
+});
 $('clearSelBtn').addEventListener('click',clearSelRect);
 
-// 区域控制类型切换与对齐点管理
+// ═══════════════════════════════════════════════════════
+// ZONE TYPE & ALIGN
+// ═══════════════════════════════════════════════════════
 document.querySelectorAll('.type-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
-    document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); S.drawType=btn.dataset.type;
+    document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    S.drawType=btn.dataset.type;
     const showAlign = ['product','title','deco'].includes(S.drawType);
-    $('alignSection').style.display = showAlign ? 'block' : 'none'; $('layerMatchSection').style.display = showAlign ? 'block' : 'none';
+    $('alignSection').style.display = showAlign ? 'block' : 'none';
+    $('layerMatchSection').style.display = showAlign ? 'block' : 'none';
     if(showAlign) populateLayerTagSelect(S.drawType);
   });
 });
+// default: product selected, show align + layer match
+$('alignSection').style.display='block';
+$('layerMatchSection').style.display='block';
 
+// Populate "对应图层" dropdown with tags of layers matching the given role
 function populateLayerTagSelect(role){
-  const sel=$('zoneLayerTag'); sel.innerHTML='<option value="">-- 自动匹配 --</option>';
-  S.layers.filter(l=>l.role===role).forEach(l=>{ const o=document.createElement('option'); o.value = l.tag || l.name; o.textContent = (l.tag || '(未命名)') + ' — ' + l.name; sel.appendChild(o); });
+  const sel=$('zoneLayerTag');
+  sel.innerHTML='<option value="">-- 自动匹配 --</option>';
+  S.layers.filter(l=>l.role===role).forEach(l=>{
+    const o=document.createElement('option');
+    o.value = l.tag || l.name;
+    o.textContent = (l.tag || '(未命名)') + '  —  ' + l.name;
+    sel.appendChild(o);
+  });
 }
 
+// Align picker — only one active at a time
+let curAlignBtn = null;
 document.querySelectorAll('.align-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{ document.querySelectorAll('.align-btn').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); S.alignX=btn.dataset.ax; S.alignY=btn.dataset.ay; });
+  // set default center
+  if(btn.dataset.ax==='center'&&btn.dataset.ay==='center'){ btn.classList.add('on'); curAlignBtn=btn; }
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.align-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    curAlignBtn=btn;
+    S.alignX=btn.dataset.ax;
+    S.alignY=btn.dataset.ay;
+  });
 });
 
+// ═══════════════════════════════════════════════════════
+// ADD ZONE
+// ═══════════════════════════════════════════════════════
 $('addZoneBtn').addEventListener('click',()=>{
-  if(!S.activeSize){showAlert('请先选择尺寸','alertMain');return} const d=S.curSel; if(!d||d.w<4||d.h<4){showAlert('请在参考图上拖拽画框','alertMain');return}
-  const typeNames={product:'产品',title:'文字',deco:'装饰',bg:'背景',safe:'安全区'}; const name=$('zoneName').value.trim()||typeNames[S.drawType];
-  S.activeSize.zones.push({ id:uid(),type:S.drawType,name, x:d.x,y:d.y,w:d.w,h:d.h, alignX:S.alignX,alignY:S.alignY, layerTag: ['product','title','deco'].includes(S.drawType) ? ($('zoneLayerTag').value||'') : '' });
-  clearSelRect(); $('zoneName').value=''; renderZoneList(); renderSizes(); redrawDemoOverlays();
+  if(!S.activeSize){showAlert('请先选择一个尺寸','alertMain');return}
+  const d=S.curSel;
+  if(!d||d.w<4||d.h<4){showAlert('请先在参考图上拖拽框选区域','alertMain');return}
+  const typeNames={product:'产品',title:'文字',deco:'装饰',bg:'背景',safe:'安全区'};
+  const name=$('zoneName').value.trim()||typeNames[S.drawType];
+  const zone={
+    id:uid(),type:S.drawType,name,
+    x:d.x,y:d.y,w:d.w,h:d.h,
+    alignX:S.alignX,alignY:S.alignY,
+    layerTag: ['product','title','deco'].includes(S.drawType) ? ($('zoneLayerTag').value||'') : '',
+  };
+  S.activeSize.zones.push(zone);
+  clearSelRect();
+  $('zoneName').value='';
+  renderZoneList();
+  renderSizes();
+  redrawDemoOverlays();
 });
 
+// ═══════════════════════════════════════════════════════
+// ZONE LIST
+// ═══════════════════════════════════════════════════════
 function renderZoneList(){
-  const body=$('zoneListBody'); body.innerHTML=''; if(!S.activeSize)return;
+  const body=$('zoneListBody');
+  body.innerHTML='';
+  if(!S.activeSize)return;
   S.activeSize.zones.forEach(z=>{
-    const el=document.createElement('div'); el.className='zt';
-    el.innerHTML=`<div class="dot dot-${z.type}"></div><span class="ztn">${z.name} <span style="color:var(--text3);font-size:10px">${z.layerTag?'→ '+z.layerTag:''}</span></span><span style="font-size:10px;color:var(--text3)">${z.w}×${z.h}</span><span class="ztd">×</span>`;
-    el.querySelector('.ztd').addEventListener('click',e=>{ e.stopPropagation(); S.activeSize.zones=S.activeSize.zones.filter(zz=>zz.id!==z.id); renderZoneList(); renderSizes(); redrawDemoOverlays(); });
+    const el=document.createElement('div');
+    el.className='zt';
+    const tagInfo = z.layerTag ? `→ ${z.layerTag}` : '';
+    el.innerHTML=`
+      <div class="dot dot-${z.type}"></div>
+      <span class="ztn">${z.name} <span style="color:var(--text3);font-size:10px">${tagInfo}</span></span>
+      <span style="font-size:10px;color:var(--text3)">${z.w}×${z.h}</span>
+      <span class="ztd" title="删除">×</span>
+    `;
+    el.querySelector('.ztd').addEventListener('click',e=>{
+      e.stopPropagation();
+      S.activeSize.zones=S.activeSize.zones.filter(zz=>zz.id!==z.id);
+      renderZoneList();renderSizes();redrawDemoOverlays();
+    });
     body.appendChild(el);
   });
 }
 
+// ═══════════════════════════════════════════════════════
+// DEMO OVERLAYS
+// ═══════════════════════════════════════════════════════
 function redrawDemoOverlays(){
-  cw.querySelectorAll('.zone-overlay').forEach(el=>el.remove()); if(!S.activeSize)return; const sc=S.demoScale;
+  cw.querySelectorAll('.zone-overlay').forEach(el=>el.remove());
+  if(!S.activeSize)return;
+  const sc=S.demoScale;
   S.activeSize.zones.forEach(z=>{
-    const div=document.createElement('div'); div.className=`zone-overlay zo-${z.type}`; div.style.cssText=`left:${z.x*sc}px;top:${z.y*sc}px;width:${z.w*sc}px;height:${z.h*sc}px`;
-    const lbl=document.createElement('div'); lbl.className=`zone-label zl-${z.type}`; lbl.textContent=z.name; div.appendChild(lbl); cw.appendChild(div);
+    const div=document.createElement('div');
+    div.className=`zone-overlay zo-${z.type}`;
+    div.style.cssText=`left:${z.x*sc}px;top:${z.y*sc}px;width:${z.w*sc}px;height:${z.h*sc}px`;
+    const lbl=document.createElement('div');
+    lbl.className=`zone-label zl-${z.type}`;
+    lbl.textContent=z.name;
+    div.appendChild(lbl);
+    cw.appendChild(div);
   });
 }
 
+// ═══════════════════════════════════════════════════════
+// STEP NAVIGATION
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.step-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>goStep(parseInt(btn.dataset.step)));
+});
 function goStep(n){
   document.querySelectorAll('.step-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.step)===n));
   document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('active',p.id==='pane'+n));
   if(n===2&&S.activeSize) activateSize(S.activeSize);
+  else if(n===2&&S.sizes.length) activateSize(S.sizes[0]);
 }
 
 // ═══════════════════════════════════════════════════════
-// 【核心渲染：DPR 高清抗锯齿合成矩阵机制】
+// GENERATE
 // ═══════════════════════════════════════════════════════
-$('generateBtn').addEventListener('click',async ()=>{
-  if(!S.src){showAlert('请先解析源文件','alertMain');return} const targets=S.sizes.filter(s=>s.checked); if(!targets.length){showAlert('请至少选择一个尺寸','alertMain');return}
-  S.results=[]; setSt('正在批量生产…');
-  for(const sz of targets){ const c=await renderSize(sz); S.results.push({name:sz.name,w:sz.w,h:sz.h,canvas:c}); }
-  showResults(); goStep(3); setSt(`成功生成 ${S.results.length} 张超清画质图`,true);
-});
+$('generateBtn').addEventListener('click',generate);
 
+async function generate(){
+  if(!S.src){showAlert('请先上传源文件','alertMain');return}
+  const targets=S.sizes.filter(s=>s.checked);
+  if(!targets.length){showAlert('请至少勾选一个输出尺寸','alertMain');return}
+
+  S.results=[];
+  setSt('生成中…');
+  for(const sz of targets){
+    const c=await renderSize(sz);
+    S.results.push({name:sz.name,w:sz.w,h:sz.h,canvas:c});
+  }
+  showResults();
+  goStep(3);
+  setSt(`已生成 ${S.results.length} 张`,true);
+}
+
+// ── Core renderer ──────────────────────────────────────
 async function renderSize(sz){
-  const out=document.createElement('canvas'); const dpr = window.devicePixelRatio || 1;
-  out.width = sz.w * dpr; out.height = sz.h * dpr; out.style.width = sz.w + 'px'; out.style.height = sz.h + 'px';
-  const ctx=out.getContext('2d'); ctx.scale(dpr, dpr); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  const out=document.createElement('canvas');
+  out.width=sz.w; out.height=sz.h;
+  const ctx=out.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
 
-  const demoW=sz.demoImg?sz.demoImg.width:sz.w; const demoH=sz.demoImg?sz.demoImg.height:sz.h;
-  const productZoneMap = matchZonesToLayers(sz.zones.filter(z=>z.type==='product'), S.layers.filter(l=>l.role==='product' && l.canvas));
-  const titleZoneMap   = matchZonesToLayers(sz.zones.filter(z=>z.type==='title'), S.layers.filter(l=>l.role==='title' && l.canvas));
-  const decoZoneMap    = matchZonesToLayers(sz.zones.filter(z=>z.type==='deco'), S.layers.filter(l=>l.role==='deco' && l.canvas));
+  const demoW=sz.demoImg?sz.demoImg.width:sz.w;
+  const demoH=sz.demoImg?sz.demoImg.height:sz.h;
 
-  for(const l of S.layers){
-    if(l.role==='none' || !l.canvas) continue; const op = (l.opacity!==undefined ? l.opacity : 100) / 100; if(op <= 0) continue;
-    ctx.save(); ctx.globalAlpha = op;
-    if(l.role==='bg'){ drawCover(ctx, l.canvas, 0,0, sz.w, sz.h, 'center','center'); }
-    else if(l.role==='product'){
-      const tr = getTrimmedCanvas(l); const zone = productZoneMap.get(l);
-      if(zone){ drawContainAnchored(ctx, tr.canvas, zone.x/demoW*sz.w, zone.y/demoH*sz.h, zone.w/demoW*sz.w, zone.h/demoH*sz.h, zone.alignX, zone.alignY); }
-      else { const sc=Math.min(sz.w/S.src.w, sz.h/S.src.h); ctx.drawImage(tr.canvas, (l.x+tr.x)*sc, (l.y+tr.y)*sc, tr.w*sc, tr.h*sc); }
-    } else if(l.role==='title'){
-      const tr = getTrimmedCanvas(l); const zone = titleZoneMap.get(l); const to = l.textOverride; const useText = to && to.enabled && to.text;
-      if(zone){
-        const zx=zone.x/demoW*sz.w, zy=zone.y/demoH*sz.h, zw=zone.w/demoW*sz.w, zh=zone.h/demoH*sz.h;
-        if(useText){ drawReplacementText(ctx, to, Math.min(zw/tr.w, zh/tr.h), zx+zw/2, zy+zh/2, zw); }
-        else { const sc=Math.min(zw/tr.w, zh/tr.h); ctx.drawImage(tr.canvas, zx+(zw-tr.w*sc)/2, zy+(zh-tr.h*sc)/2, tr.w*sc, tr.h*sc); }
-      } else {
-        const sc=Math.min(sz.w/S.src.w, sz.h/S.src.h);
-        if(useText){ drawReplacementText(ctx, to, sc, (l.x+tr.x+tr.w/2)*sc, (l.y+tr.y+tr.h/2)*sc, tr.w*sc); }
-        else { ctx.drawImage(tr.canvas, (l.x+tr.x)*sc, (l.y+tr.y)*sc, tr.w*sc, tr.h*sc); }
-      }
-    } else if(l.role==='deco'){
-      const tr = getTrimmedCanvas(l); const zone = decoZoneMap.get(l);
-      if(zone){ drawContainAnchored(ctx, tr.canvas, zone.x/demoW*sz.w, zone.y/demoH*sz.h, zone.w/demoW*sz.w, zone.h/demoH*sz.h, zone.alignX, zone.alignY); }
-      else { const sc=Math.min(sz.w/S.src.w, sz.h/S.src.h); ctx.drawImage(l.canvas, l.x*sc, l.y*sc, l.w*sc, l.h*sc); }
+  // Build zone lists per type
+  const productZones = sz.zones.filter(z=>z.type==='product');
+  const titleZones   = sz.zones.filter(z=>z.type==='title');
+  const decoZones    = sz.zones.filter(z=>z.type==='deco');
+
+  // Match zones to layers by tag, with sequential fallback for unmatched zones/layers
+  function matchZonesToLayers(zones, layers){
+    const map = new Map(); // layer -> zone
+    const usedZones = new Set();
+    // 1st pass: exact tag match
+    for(const l of layers){
+      const z = zones.find(zz=>zz.layerTag && zz.layerTag===l.tag && !usedZones.has(zz.id));
+      if(z){ map.set(l,z); usedZones.add(z.id); }
     }
+    // 2nd pass: sequential fallback for layers/zones without tag match
+    const remainingZones = zones.filter(z=>!usedZones.has(z.id));
+    const remainingLayers = layers.filter(l=>!map.has(l));
+    for(let i=0;i<remainingLayers.length && i<remainingZones.length;i++){
+      map.set(remainingLayers[i], remainingZones[i]);
+    }
+    return map;
+  }
+
+  const productLayers = S.layers.filter(l=>l.role==='product' && l.canvas);
+  const titleLayers   = S.layers.filter(l=>l.role==='title'   && l.canvas);
+  const decoLayers    = S.layers.filter(l=>l.role==='deco'    && l.canvas);
+
+  const productZoneMap = matchZonesToLayers(productZones, productLayers);
+  const titleZoneMap   = matchZonesToLayers(titleZones, titleLayers);
+  const decoZoneMap    = matchZonesToLayers(decoZones, decoLayers);
+
+  // Iterate layers in their array order (index 0 = bottom-most, drawn first)
+  for(const l of S.layers){
+    if(l.role==='none' || !l.canvas) continue;
+    const op = (l.opacity!==undefined ? l.opacity : 100) / 100;
+    if(op <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = op;
+
+    if(l.role==='bg'){
+      // Cover entire canvas, equal scale + center-crop
+      drawCover(ctx, l.canvas, 0,0, sz.w, sz.h, 'center','center');
+
+    } else if(l.role==='product'){
+      const trimmed = getTrimmedCanvas(l);
+      const zone = productZoneMap.get(l);
+      if(zone){
+        // Zone indicates POSITION + approximate SIZE only.
+        // Product (trimmed of transparent padding) is scaled proportionally (contain)
+        // to roughly match zone size, anchored per align point. Cropping only at canvas edges.
+        const zx=zone.x/demoW*sz.w;
+        const zy=zone.y/demoH*sz.h;
+        const zw=zone.w/demoW*sz.w;
+        const zh=zone.h/demoH*sz.h;
+        drawContainAnchored(ctx, trimmed.canvas, zx,zy,zw,zh, zone.alignX||'center', zone.alignY||'center');
+      } else {
+        // No zone: uniform scale (no stretch), positioned at proportional location
+        const scale=Math.min(sz.w/S.src.w, sz.h/S.src.h);
+        ctx.drawImage(trimmed.canvas, (l.x+trimmed.x)*scale, (l.y+trimmed.y)*scale, trimmed.w*scale, trimmed.h*scale);
+      }
+
+    } else if(l.role==='title'){
+      const trimmed = getTrimmedCanvas(l);
+      const zone = titleZoneMap.get(l);
+      const to = l.textOverride;
+      const useText = to && to.enabled && to.text && to.text.trim().length>0;
+
+      if(zone){
+        const zx=zone.x/demoW*sz.w;
+        const zy=zone.y/demoH*sz.h;
+        const zw=zone.w/demoW*sz.w;
+        const zh=zone.h/demoH*sz.h;
+        if(useText){
+          const sc=Math.min(zw/trimmed.w, zh/trimmed.h);
+          drawReplacementText(ctx, to, sc, zx+zw/2, zy+zh/2, zw);
+        } else {
+          // fit entirely within zone (contain), centered — uniform scale, no stretch
+          const sc=Math.min(zw/trimmed.w, zh/trimmed.h);
+          const dw=trimmed.w*sc, dh=trimmed.h*sc;
+          ctx.drawImage(trimmed.canvas, zx+(zw-dw)/2, zy+(zh-dh)/2, dw, dh);
+        }
+      } else {
+        const scale=Math.min(sz.w/S.src.w, sz.h/S.src.h);
+        if(useText){
+          const cx=(l.x+trimmed.x+trimmed.w/2)*scale;
+          const cy=(l.y+trimmed.y+trimmed.h/2)*scale;
+          drawReplacementText(ctx, to, scale, cx, cy, trimmed.w*scale);
+        } else {
+          ctx.drawImage(trimmed.canvas, (l.x+trimmed.x)*scale, (l.y+trimmed.y)*scale, trimmed.w*scale, trimmed.h*scale);
+        }
+      }
+
+    } else if(l.role==='deco'){
+      const trimmed = getTrimmedCanvas(l);
+      const zone = decoZoneMap.get(l);
+      if(zone){
+        // Same semantics as product: zone = position+approx size guide, contain + anchor
+        const zx=zone.x/demoW*sz.w;
+        const zy=zone.y/demoH*sz.h;
+        const zw=zone.w/demoW*sz.w;
+        const zh=zone.h/demoH*sz.h;
+        drawContainAnchored(ctx, trimmed.canvas, zx,zy,zw,zh, zone.alignX||'center', zone.alignY||'center');
+      } else {
+        // No zone: uniform scale (no stretch), positioned proportionally from source
+        const scale=Math.min(sz.w/S.src.w, sz.h/S.src.h);
+        ctx.drawImage(l.canvas, l.x*scale, l.y*scale, l.w*scale, l.h*scale);
+      }
+    }
+
     ctx.restore();
   }
+
   return out;
 }
 
-function matchZonesToLayers(zones, layers){
-  const map = new Map(); const used = new Set();
-  for(const l of layers){ const z = zones.find(zz=>zz.layerTag && zz.layerTag===l.tag && !used.has(zz.id)); if(z){ map.set(l,z); used.add(z.id); } }
-  const rZ = zones.filter(z=>!used.has(z.id)); const rL = layers.filter(l=>!map.has(l));
-  for(let i=0; i<rL.length && i<rZ.length; i++){ map.set(rL[i], rZ[i]); } return map;
-}
-
+// drawReplacementText: renders user-edited text centered at (cx,cy), scaled by `scale`
+// (same scale factor used for the image it's replacing). Supports multi-line text.
 function drawReplacementText(ctx, to, scale, cx, cy, maxWidth){
-  const fontSizePx = Math.max(6, Math.round((to.size||24) * scale)); ctx.save();
-  ctx.font = `${to.bold?'bold':'normal'} ${fontSizePx}px ${to.font||'sans-serif'}`; ctx.fillStyle = to.color || '#000000';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const lines = to.text.split('\n'); const lh = fontSizePx * 1.25;
-  let y = cy - (lh * lines.length)/2 + lh/2; for(const line of lines){ ctx.fillText(line, cx, y, maxWidth*1.05); y += lh; } ctx.restore();
+  const fontSizePx = Math.max(6, Math.round((to.size||24) * scale));
+  const fontFamily = (to.font && to.font.trim()) || 'sans-serif';
+  const weight = to.bold ? 'bold' : 'normal';
+  ctx.save();
+  ctx.font = `${weight} ${fontSizePx}px ${fontFamily}`;
+  ctx.fillStyle = to.color || '#000000';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const lines = to.text.split('\n');
+  const lineHeight = fontSizePx * 1.25;
+  const totalH = lineHeight * lines.length;
+  let y = cy - totalH/2 + lineHeight/2;
+  for(const line of lines){
+    ctx.fillText(line, cx, y, maxWidth*1.05);
+    y += lineHeight;
+  }
+  ctx.restore();
 }
 
+// getTrimmedCanvas: returns {canvas, x, y, w, h} where the canvas is cropped to
+// the bounding box of non-transparent pixels (with x,y = offset within original layer).
+// Result is cached on the layer object (l._trimmed) since this is somewhat expensive.
 function getTrimmedCanvas(l){
-  if(l._trimmed) return l._trimmed; const src = l.canvas; const w = src.width, h = src.height; if(w===0||h===0) return l._trimmed={canvas:src,x:0,y:0,w,h};
-  let imgData; try{ imgData = src.getContext('2d').getImageData(0,0,w,h).data; }catch(e){ return l._trimmed={canvas:src,x:0,y:0,w,h}; }
+  if(l._trimmed) return l._trimmed;
+  const src = l.canvas;
+  const w = src.width, h = src.height;
+  if(w===0 || h===0){
+    return l._trimmed = {canvas: src, x:0, y:0, w, h};
+  }
+  let imgData;
+  try{
+    imgData = src.getContext('2d').getImageData(0,0,w,h).data;
+  }catch(e){
+    // CORS or other issue — fall back to untrimmed
+    return l._trimmed = {canvas: src, x:0, y:0, w, h};
+  }
   let minX=w, minY=h, maxX=-1, maxY=-1;
-  for(let y=0;y<h;y++){ for(let x=0;x<w;x++){ if(imgData[(y*w+x)*4+3]>0){ if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; } } }
-  if(maxX<0) return l._trimmed={canvas:src,x:0,y:0,w,h}; const tw=maxX-minX+1, th=maxY-minY+1;
-  const tc=document.createElement('canvas'); tc.width=tw; tc.height=th; tc.getContext('2d').drawImage(src, minX,minY,tw,th, 0,0,tw,th);
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const a = imgData[(y*w+x)*4+3];
+      if(a>0){
+        if(x<minX)minX=x; if(x>maxX)maxX=x;
+        if(y<minY)minY=y; if(y>maxY)maxY=y;
+      }
+    }
+  }
+  if(maxX<0){
+    // fully transparent
+    return l._trimmed = {canvas: src, x:0, y:0, w, h};
+  }
+  const tw=maxX-minX+1, th=maxY-minY+1;
+  if(minX===0 && minY===0 && tw===w && th===h){
+    return l._trimmed = {canvas: src, x:0, y:0, w, h};
+  }
+  const tc=document.createElement('canvas');
+  tc.width=tw; tc.height=th;
+  tc.getContext('2d').drawImage(src, minX,minY,tw,th, 0,0,tw,th);
   return l._trimmed = {canvas:tc, x:minX, y:minY, w:tw, h:th};
 }
 
+
 function drawCover(ctx, src, dx,dy, dw,dh, alignX='center', alignY='center'){
-  const sw=src.width, sh=src.height; const sc=Math.max(dw/sw, dh/sh); const scaledW=sw*sc, scaledH=sh*sc;
-  let ox=(scaledW-dw)/2, oy=(scaledH-dh)/2; if(alignX==='left')ox=0; else if(alignX==='right')ox=scaledW-dw; if(alignY==='top')oy=0; else if(alignY==='bottom')oy=scaledH-dh;
-  ctx.save(); ctx.beginPath(); ctx.rect(dx,dy,dw,dh); ctx.clip(); ctx.drawImage(src, dx-ox, dy-oy, scaledW, scaledH); ctx.restore();
+  if(!src||src.width===0) return;
+  const sw=src.width, sh=src.height;
+  const sc=Math.max(dw/sw, dh/sh);
+  const scaledW=sw*sc, scaledH=sh*sc;
+
+  let ox=0,oy=0;
+  if(alignX==='left')   ox=0;
+  else if(alignX==='right') ox=scaledW-dw;
+  else ox=(scaledW-dw)/2;
+
+  if(alignY==='top')    oy=0;
+  else if(alignY==='bottom') oy=scaledH-dh;
+  else oy=(scaledH-dh)/2;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(dx,dy,dw,dh);
+  ctx.clip();
+  ctx.drawImage(src, dx-ox, dy-oy, scaledW, scaledH);
+  ctx.restore();
 }
 
+// drawContainAnchored: the zone box's chosen anchor point (one of 9: corners/edges/center,
+// default = center) represents a reference point. The source image is scaled
+// proportionally to "contain" within the zone's w/h (limited by whichever dimension
+// — width or height — would otherwise overflow). The SAME relative anchor point on the
+// scaled image is then placed exactly at the zone's anchor point. No clipping to the
+// zone — only the canvas edges crop if the result extends past the output bounds.
 function drawContainAnchored(ctx, src, zx,zy,zw,zh, alignX='center', alignY='center'){
-  const sw=src.width, sh=src.height; const sc=Math.min(zw/sw, zh/sh); const scaledW=sw*sc, scaledH=sh*sc;
-  let ax = alignX==='left' ? zx : alignX==='right' ? zx+zw : zx+zw/2; let ay = alignY==='top' ? zy : alignY==='bottom'? zy+zh : zy+zh/2;
-  let ix = alignX==='left' ? 0 : alignX==='right' ? scaledW : scaledW/2; let iy = alignY==='top' ? 0 : alignY==='bottom'? scaledH : scaledH/2;
-  ctx.drawImage(src, ax-ix, ay-iy, scaledW, scaledH);
+  if(!src||src.width===0) return;
+  const sw=src.width, sh=src.height;
+
+  // contain: pick the limiting dimension so the image fits within zw/zh
+  const sc=Math.min(zw/sw, zh/sh);
+  const scaledW=sw*sc, scaledH=sh*sc;
+
+  // anchor point location within the zone box
+  let anchorZoneX = alignX==='left' ? zx : alignX==='right' ? zx+zw : zx+zw/2;
+  let anchorZoneY = alignY==='top'  ? zy : alignY==='bottom'? zy+zh : zy+zh/2;
+
+  // corresponding point on the scaled image (relative to its own top-left)
+  let anchorImgX = alignX==='left' ? 0 : alignX==='right' ? scaledW : scaledW/2;
+  let anchorImgY = alignY==='top'  ? 0 : alignY==='bottom'? scaledH : scaledH/2;
+
+  const px = anchorZoneX - anchorImgX;
+  const py = anchorZoneY - anchorImgY;
+
+  // No ctx.clip() — canvas bounds naturally crop if image extends outside
+  ctx.drawImage(src, px, py, scaledW, scaledH);
 }
 
-// 展示与批量打包无损下载
+// ═══════════════════════════════════════════════════════
+// SHOW RESULTS
+// ═══════════════════════════════════════════════════════
 function showResults(){
-  const grid=$('resultsGrid'); grid.innerHTML='';
+  const grid=$('resultsGrid');
+  grid.innerHTML='';
   S.results.forEach(r=>{
-    const card=document.createElement('div'); card.className='res-card'; const maxThumb=280; const sc=Math.min(1,maxThumb/r.w,maxThumb/r.h);
-    const tc=document.createElement('canvas'); tc.width=Math.round(r.w*sc); tc.height=Math.round(r.h*sc); tc.getContext('2d').drawImage(r.canvas,0,0,tc.width,tc.height); tc.style.width='100%';
-    const foot=document.createElement('div'); foot.className='res-card-foot'; foot.innerHTML=`<div><div class="res-name">${r.name}</div><div class="res-dim">${r.w}×${r.h}px</div></div>`;
-    const dlBtn=document.createElement('button'); dlBtn.className='btn btn-sm'; dlBtn.textContent='↓ 下载'; dlBtn.addEventListener('click',()=>dlCanvas(r.canvas,`${r.name}_${r.w}x${r.h}.png`));
-    foot.appendChild(dlBtn); card.appendChild(tc); card.appendChild(foot); grid.appendChild(card);
+    const card=document.createElement('div');
+    card.className='res-card';
+    const maxThumb=280;
+    const sc=Math.min(1,maxThumb/r.w,maxThumb/r.h);
+    const tc=document.createElement('canvas');
+    tc.width=Math.round(r.w*sc);
+    tc.height=Math.round(r.h*sc);
+    tc.getContext('2d').drawImage(r.canvas,0,0,tc.width,tc.height);
+    tc.style.width='100%';
+    const foot=document.createElement('div');
+    foot.className='res-card-foot';
+    foot.innerHTML=`<div><div class="res-name">${r.name}</div><div class="res-dim">${r.w}×${r.h}px</div></div>`;
+    const dlBtn=document.createElement('button');
+    dlBtn.className='btn btn-sm';
+    dlBtn.textContent='↓ 下载';
+    dlBtn.addEventListener('click',()=>dlCanvas(r.canvas,`${r.name}_${r.w}x${r.h}.png`));
+    foot.appendChild(dlBtn);
+    card.appendChild(tc);card.appendChild(foot);
+    grid.appendChild(card);
   });
-  $('s3empty').style.display='none'; $('s3content').style.display='block'; $('dlAllBtn').style.display='block';
+  $('s3empty').style.display='none';
+  $('s3content').style.display='block';
+  $('dlAllBtn').style.display='block';
 }
 
-$('dlAllBtn').addEventListener('click',()=>{ S.results.forEach((r,i)=>setTimeout(()=>dlCanvas(r.canvas,`${r.name}_${r.w}x${r.h}.png`),i*200)); });
-function dlCanvas(canvas,name){ const a=document.createElement('a'); a.download=name; a.href=canvas.toDataURL('image/png'); a.click(); }
+$('dlAllBtn').addEventListener('click',()=>{
+  S.results.forEach((r,i)=>setTimeout(()=>dlCanvas(r.canvas,`${r.name}_${r.w}x${r.h}.png`),i*200));
+});
 
-// 基础辅助
-function toCanvas(img){ const c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight; c.getContext('2d').drawImage(img,0,0); return c; }
-function imgFromUrl(url){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=url; }); }
-function setSt(msg,ok=false){ $('stText').textContent=msg; $('stDot').className=ok?'dot-ok':'dot-idle'; }
-function showAlert(msg,id){ const el=$(id); el.textContent=msg; el.className='alert alert-warn show'; setTimeout(()=>el.classList.remove('show'),3000); }
+function dlCanvas(canvas,name){
+  const a=document.createElement('a');
+  a.download=name; a.href=canvas.toDataURL('image/png'); a.click();
+}
 
-// 页面异步就绪初始化
-if (localStorage.getItem(STORAGE_KEY)) { $('ghToken').value = localStorage.getItem(STORAGE_KEY); }
-ghLoadConfig();
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function toCanvas(img){
+  const c=document.createElement('canvas');
+  c.width=img.naturalWidth;c.height=img.naturalHeight;
+  c.getContext('2d').drawImage(img,0,0);
+  return c;
+}
+function imgFromUrl(url){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>res(img);
+    img.onerror=rej;
+    img.src=url;
+  });
+}
+function setSt(msg,ok=false){
+  $('stText').textContent=msg;
+  $('stDot').className=ok?'dot-ok':'dot-idle';
+}
+function showAlert(msg,id){
+  const el=$(id);
+  el.textContent=msg;
+  el.className='alert alert-warn show';
+  setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// init
+renderSizes();
+ghLoadConfig(); // auto-load on open
 </script>
 </body>
 </html>
