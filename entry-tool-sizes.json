@@ -41,7 +41,7 @@
     "width": 375,
     "height": 188,
     "layers": [],
-    "checked": true
+    "checked": false
   },
   {
     "id": "50u360",
@@ -49,7 +49,7 @@
     "width": 375,
     "height": 375,
     "layers": [],
-    "checked": true
+    "checked": false
   },
   {
     "id": "mi1ae7",
@@ -57,6 +57,55 @@
     "width": 375,
     "height": 500,
     "layers": [],
+    "checked": false
+  },
+  {
+    "id": "utzenv",
+    "name": "橱窗图",
+    "width": 800,
+    "height": 800,
+    "layers": [
+      {
+        "id": "ycorlv",
+        "key": "产品",
+        "type": "image",
+        "x": 189,
+        "y": 209,
+        "width": 331,
+        "height": 296,
+        "role": "product",
+        "alignX": "center",
+        "alignY": "center",
+        "layerTag": ""
+      },
+      {
+        "id": "j0cheu",
+        "key": "文字",
+        "type": "text",
+        "x": 178,
+        "y": 84,
+        "width": 342,
+        "height": 113,
+        "maxWidth": 342,
+        "role": "title",
+        "alignX": "center",
+        "alignY": "center",
+        "layerTag": ""
+      },
+      {
+        "id": "sq5fsj",
+        "key": "装饰",
+        "type": "image",
+        "x": 389,
+        "y": 502,
+        "width": 127,
+        "height": 28,
+        "role": "deco",
+        "alignX": "center",
+        "alignY": "center",
+        "layerTag": ""
+      }
+    ],
     "checked": true
   }
 ]
