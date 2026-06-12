@@ -863,78 +863,50 @@ function drawCompositePreview(){
 // SIZES
 // ═══════════════════════════════════════════════════════
 function renderSizes(){
-  const el = $('sizeList'); 
-  el.innerHTML = '';
-  
-  S.sizes.forEach(s => {
+  const el = $('sizeList'); el.innerHTML='';
+  S.sizes.forEach(s=>{
     const item = document.createElement('div');
-    // 根据选中状态和是否有区域配置赋予不同的样式类名
-    item.className = 'size-item' + (S.activeSize && S.activeSize.id === s.id ? ' active' : '') + (s.zones && s.zones.length ? ' configured' : '');
+    item.className = 'size-item' + (S.activeSize&&S.activeSize.id===s.id?' active':'') + (s.zones.length?' configured':'');
     
-    // 点击整行切换当前选中的尺寸（排除点击复选框和删除按钮）
-    item.addEventListener('click', e => { 
-      if(e.target.tagName !== 'INPUT' && !e.target.classList.contains('si-del')) {
+    // ✨ 修复核心：只要你不是点中复选框(INPUT)或删除按钮(si-del)，其他任何地方（名字、分辨率、空白处）都能正常触发选择！
+    item.addEventListener('click', e=>{ 
+      if(e.target.tagName !== 'INPUT' && !e.target.classList.contains('si-del')){
         selectSize(s);
       } 
     });
 
-    // 1. 左侧复选框
-    const chk = document.createElement('input'); 
-    chk.type = 'checkbox'; 
-    chk.className = 'si-check'; 
-    chk.checked = !!s.checked;
-    chk.addEventListener('change', e => { s.checked = e.target.checked; });
-
-    // 2. 尺寸名称
-    const name = document.createElement('span'); 
-    name.className = 'si-name'; 
-    name.textContent = s.name;
-
-    // 3. 尺寸分辨率标记
-    const dim = document.createElement('span'); 
-    dim.className = 'si-dim'; 
-    dim.textContent = `${s.w}x${s.h}`;
-
-    // 4. ✨ 新增：右侧删除按钮 (×)
-    const del = document.createElement('span'); 
-    del.className = 'si-del';
-    del.textContent = '×'; 
-    // 稍微加一点行内样式，让它看起来像个红色的关闭按钮，并且鼠标悬停有手型
-    del.style.cssText = 'color: var(--text3); cursor: pointer; font-size: 16px; padding: 0 4px; margin-left: auto; font-weight: bold; transition: color 0.2s;';
+    const chk = document.createElement('input'); chk.type='checkbox'; chk.className='si-check'; chk.checked=!!s.checked;
+    chk.addEventListener('change', e=>{ s.checked = e.target.checked; });
     
-    // 悬停变红的小交互
+    const name = document.createElement('span'); name.className='si-name'; name.textContent=s.name;
+    const dim = document.createElement('span'); dim.className='si-dim'; dim.textContent=`${s.w}x${s.h}`;
+    
+    // 右侧删除按钮
+    const del = document.createElement('span'); 
+    del.className = 'si-del'; // 确保这里有 si-del 类名用来做点击拦截
+    del.textContent = '×'; 
+    del.style.cssText = 'color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px;margin-left:auto;font-weight:bold;display:inline-block;';
+    
     del.addEventListener('mouseenter', () => { del.style.color = '#ff4d4f'; });
     del.addEventListener('mouseleave', () => { del.style.color = 'var(--text3)'; });
-
-    // 点击删除按钮的逻辑
-    del.addEventListener('click', e => { 
-      e.stopPropagation(); // 阻止事件冒泡，防止触发整行的 selectSize 事件
+    
+    del.addEventListener('click', e=>{
+      e.stopPropagation(); // 阻止事件冒泡，不触发整行的 selectSize
+      if(!confirm(`确定要删除尺寸【${s.name}】吗？`)) return;
       
-      // 弹窗二次确认，防止误触
-      if (!confirm(`确定要删除尺寸【${s.name}】吗？\n删除后该尺寸下的区域配置也将丢失。`)) {
-        return;
-      }
-
-      // 从全局数据状态 S.sizes 中过滤掉当前尺寸
-      S.sizes = S.sizes.filter(x => x.id !== s.id); 
-      
-      // 如果删掉的刚好是当前正在右侧编辑的尺寸，把编辑状态清空
-      if (S.activeSize && S.activeSize.id === s.id) {
+      S.sizes = S.sizes.filter(x=>x.id!==s.id);
+      if(S.activeSize && S.activeSize.id===s.id){
         S.activeSize = null;
-        $('s2empty').style.display = 'flex';
-        $('s2content').style.display = 'none';
-      } 
-      
-      // 重新渲染左侧列表
-      renderSizes(); 
-      setSt('✓ 尺寸已成功移除', true);
+        $('s2empty').style.display='flex';
+        $('s2content').style.display='none';
+      }
+      renderSizes();
     });
 
-    // 按顺序组装到 DOM 节点中
     item.appendChild(chk); 
     item.appendChild(name); 
     item.appendChild(dim); 
-    item.appendChild(del); // 把删除按钮挂上去
+    item.appendChild(del); 
     el.appendChild(item);
   });
 }
