@@ -1,6 +1,6 @@
 [
   {
-    "id": "cnq4de",
+    "id": "m6jg8m",
     "name": "demo",
     "width": 750,
     "height": 360,
@@ -8,39 +8,11 @@
     "checked": true
   },
   {
-    "id": "yo8zmo",
-    "name": "首页 Banner",
-    "width": 750,
-    "height": 360,
-    "layers": [
-      {
-        "id": "...",
-        "key": "产品1",
-        "type": "image",
-        "x": 100,
-        "y": 50,
-        "width": 300,
-        "height": 300,
-        "role": "product",
-        "alignX": "center",
-        "alignY": "center",
-        "layerTag": "产品1"
-      },
-      {
-        "id": "8d7nll",
-        "key": "文字1",
-        "type": "text",
-        "x": 20,
-        "y": 20,
-        "width": 400,
-        "height": 80,
-        "maxWidth": 400,
-        "role": "title",
-        "alignX": "center",
-        "alignY": "center",
-        "layerTag": "文字1"
-      }
-    ],
+    "id": "i1tfvw",
+    "name": "频道入口 2:1",
+    "width": 375,
+    "height": 188,
+    "layers": [],
     "checked": true
   },
   {
