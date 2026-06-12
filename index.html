@@ -870,19 +870,18 @@ function renderSizes(){
     const item = document.createElement('div');
     item.className = 'size-item' + (S.activeSize && S.activeSize.id === s.id ? ' active' : '') + (s.zones.length ? ' configured' : '');
     
-    // ✨ 终极修复方案：绑定整行点击，并精准识别点击目标
+    // ✨ 精准修复：使用源码中正确的函数名 activateSize，并带上视图切换 goStep(2)
     item.addEventListener('click', e => {
-      // 1. 如果点中的是删除按钮，直接拦截，不执行切换
       if (e.target.classList.contains('si-del')) {
         return; 
       }
-      // 2. 如果点中的是左侧复选框，让它走复选框自带的勾选逻辑，不执行切换
       if (e.target.tagName === 'INPUT') {
         return; 
       }
       
-      // 3. 只要不是上面两种情况（点到文字、分辨率、卡片空白），100% 触发选择和切步骤
-      selectSize(s);
+      // 🎯 呼叫源码中真正的激活函数
+      activateSize(s);
+      goStep(2);
     });
 
     // 左侧复选框
