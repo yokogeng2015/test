@@ -1,5 +1,13 @@
 [
   {
+    "id": "4syu09",
+    "name": "demo",
+    "width": 750,
+    "height": 360,
+    "layers": [],
+    "checked": true
+  },
+  {
     "id": "yo8zmo",
     "name": "首页 Banner",
     "width": 750,
@@ -52,7 +60,7 @@
         "role": "product",
         "alignX": "center",
         "alignY": "center",
-        "layerTag": ""
+        "layerTag": "产品"
       },
       {
         "id": "j0cheu",
@@ -66,7 +74,7 @@
         "role": "title",
         "alignX": "center",
         "alignY": "center",
-        "layerTag": ""
+        "layerTag": "文字"
       },
       {
         "id": "sq5fsj",
@@ -79,7 +87,7 @@
         "role": "deco",
         "alignX": "center",
         "alignY": "center",
-        "layerTag": ""
+        "layerTag": "装饰"
       }
     ],
     "checked": true
