@@ -4,7 +4,34 @@
     "name": "首页 Banner",
     "width": 750,
     "height": 360,
-    "layers": [],
+    "layers": [
+      {
+        "id": "5x8v2n",
+        "key": "产品1",
+        "type": "image",
+        "x": 100,
+        "y": 50,
+        "width": 300,
+        "height": 300,
+        "role": "product",
+        "alignX": "center",
+        "alignY": "center",
+        "layerTag": "产品1"
+      },
+      {
+        "id": "6ftgv0",
+        "key": "文字1",
+        "type": "text",
+        "x": 20,
+        "y": 20,
+        "width": 400,
+        "height": 80,
+        "role": "title",
+        "alignX": "center",
+        "alignY": "center",
+        "layerTag": "文字1"
+      }
+    ],
     "checked": false
   },
   {
@@ -34,7 +61,6 @@
         "y": 85,
         "width": 316,
         "height": 112,
-        "maxWidth": 316,
         "role": "title",
         "alignX": "center",
         "alignY": "center",
