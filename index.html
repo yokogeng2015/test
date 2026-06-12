@@ -445,7 +445,19 @@ const S = {
   demoScale: 1,
   results: [],
 };
+  
+// ═══════════════════════════════════════════════════════
+// ⚙️ 默认固化配置（在这里填入你的默认 Token）
+// ═══════════════════════════════════════════════════════
+const MY_DEFAULT_TOKEN = "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";
+const STORAGE_KEY = 'gh_token_cached';
 
+// 如果浏览器缓存里还没有存过 Token，就默认把上面这个写入缓存
+if (!localStorage.getItem(STORAGE_KEY) && MY_DEFAULT_TOKEN) {
+  localStorage.setItem(STORAGE_KEY, MY_DEFAULT_TOKEN);
+}
+  
+  
 const DEFAULT_SIZES = [
   {name:'首页 Banner',w:750,h:360},
   {name:'频道入口 2:1',w:375,h:188},
@@ -1709,6 +1721,10 @@ function showAlert(msg,id){
 // init
 renderSizes();
 ghLoadConfig(); // auto-load on open
+// 页面加载时，自动把固化/缓存的 Token 回填到界面的输入框中
+if (localStorage.getItem(STORAGE_KEY)) {
+  $('ghToken').value = localStorage.getItem(STORAGE_KEY);
+}  
 </script>
 </body>
 </html>
