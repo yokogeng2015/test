@@ -429,7 +429,7 @@ const S = {
 };
 
 // ⚙️ 默认硬编码及自动固化配置项（在这里填入你真正的私有 Token）
-const MY_DEFAULT_TOKEN = ""; // 👈 保持这里为空！绝对不要填任何东西！
+const MY_DEFAULT_TOKEN = "你的ghp_开头的真正Token贴在这里";
 const STORAGE_KEY = 'gh_token_cached';
 
 // 如果浏览器缓存里还没有存过 Token，就默认把上面这个写入缓存
@@ -626,4 +626,392 @@ function renderLayerRoles(){
     const opSlider=document.createElement('input'); opSlider.type='range'; opSlider.min='0'; opSlider.max='100'; opSlider.step='1'; opSlider.value = l.opacity!==undefined?l.opacity:100; opSlider.style.cssText='flex:1;accent-color:var(--accent);height:4px';
     const opLabel=document.createElement('span'); opLabel.style.cssText='font-size:10px;color:var(--text3);width:30px;text-align:right;flex-shrink:0'; opLabel.textContent=opSlider.value+'%';
     opSlider.addEventListener('input',e=>{ l.opacity=parseInt(e.target.value); opLabel.textContent=l.opacity+'%'; });
-    op
+    opWrap.appendChild(opSlider); opWrap.appendChild(opLabel);
+
+    row.appendChild(orderBox); row.appendChild(thumb); row.appendChild(name); row.appendChild(tagInput); row.appendChild(opWrap); row.appendChild(sel);
+
+    const editBtn=document.createElement('button'); editBtn.className='btn btn-ghost btn-sm'; editBtn.textContent='✎ 文字'; editBtn.style.cssText='font-size:11px;padding:3px 8px;flex-shrink:0';
+    editBtn.style.display = l.role==='title' ? 'inline-flex' : 'none'; row.appendChild(editBtn); el.appendChild(row);
+
+    const panel=document.createElement('div'); panel.style.cssText='display:none;width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px;margin:2px 0 6px;'; el.appendChild(panel);
+
+    function buildTextPanel(){
+      panel.innerHTML=''; if(!l.textOverride) l.textOverride = {enabled:false, text:'', font:'', size:'', color:'#000000'}; const to = l.textOverride;
+      if(!to._inited){ try{ const tr = getTrimmedCanvas(l); if(!to.size) to.size = Math.round(tr.h * 0.8); if(!to.color) to.color = sampleDominantColor(tr.canvas) || '#000000'; }catch(e){} to._inited = true; }
+      const row1=document.createElement('div'); row1.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:6px';
+      const chk=document.createElement('input'); chk.type='checkbox'; chk.checked=!!to.enabled; chk.addEventListener('change',e=>{ to.enabled=e.target.checked; });
+      const chkLabel=document.createElement('span'); chkLabel.style.cssText='font-size:11px;color:var(--text2)'; chkLabel.textContent='启用文字替换（生成时用下方渲染替代原图层）';
+      row1.appendChild(chk); row1.appendChild(chkLabel);
+      const ta=document.createElement('textarea'); ta.value=to.text||''; ta.placeholder='输入替换文字'; ta.rows=2; ta.style.cssText='width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;margin-bottom:6px;resize:vertical'; ta.addEventListener('input',e=>{ to.text=e.target.value; });
+      const row2=document.createElement('div'); row2.style.cssText='display:flex;gap:6px';
+      const fontInput=document.createElement('input'); fontInput.type='text'; fontInput.value=to.font||''; fontInput.placeholder='字体，如PingFang SC'; fontInput.style.cssText='flex:2;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12px'; fontInput.addEventListener('change',e=>{ to.font=e.target.value; });
+      const sizeInput=document.createElement('input'); sizeInput.type='number'; sizeInput.value=to.size||''; sizeInput.placeholder='字号'; sizeInput.style.cssText='width:90px;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12px'; sizeInput.addEventListener('change',e=>{ sizeInput.value=parseInt(e.target.value)||to.size; });
+      const colorInput=document.createElement('input'); colorInput.type='color'; colorInput.value=to.color||'#000000'; colorInput.style.cssText='width:36px;height:28px;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:2px;cursor:pointer'; colorInput.addEventListener('input',e=>{ to.color=e.target.value; });
+      const boldWrap=document.createElement('label'); boldWrap.style.cssText='display:flex;align-items:center;gap:3px;font-size:11px;color:var(--text2)';
+      const boldChk=document.createElement('input'); boldChk.type='checkbox'; boldChk.checked=!!to.bold; boldChk.addEventListener('change',e=>{ to.bold=e.target.checked; });
+      boldWrap.appendChild(boldChk); boldWrap.appendChild(document.createTextNode('加粗'));
+      row2.appendChild(fontInput); row2.appendChild(sizeInput); row2.appendChild(colorInput); row2.appendChild(boldWrap);
+      panel.appendChild(row1); panel.appendChild(ta); panel.appendChild(row2);
+    }
+    editBtn.addEventListener('click',()=>{ const open = panel.style.display!=='none'; panel.style.display = open ? 'none' : 'block'; if(!open) buildTextPanel(); });
+  }
+}
+
+function sampleDominantColor(canvas){
+  try{
+    const w=canvas.width,h=canvas.height; if(w===0||h===0) return null;
+    const data=canvas.getContext('2d').getImageData(0,0,w,h).data; let counts={};
+    for(let i=0;i<data.length;i+=4*7){ const a=data[i+3]; if(a<128) continue; const r=data[i],g=data[i+1],b=data[i+2]; const key=`${r>>4},${g>>4},${b>>4}`; counts[key]=(counts[key]||0)+1; }
+    let best=null,bestCount=0; for(const k in counts){ if(counts[k]>bestCount){bestCount=counts[k];best=k;} }
+    if(!best) return null; const [r,g,b]=best.split(',').map(v=>(parseInt(v)<<4)+8); return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+  }catch(e){ return null; }
+}
+
+function drawCompositePreview(){
+  const cv=$('previewCanvas'); if(!S.src) return; const maxW=600,maxH=280; const sc=Math.min(1,maxW/S.src.w,maxH/S.src.h);
+  cv.width=Math.round(S.src.w*sc); cv.height=Math.round(S.src.h*sc); cv.getContext('2d').drawImage(S.src.canvas,0,0,cv.width,cv.height);
+}
+
+// ═══════════════════════════════════════════════════════
+// 【步骤 2 — 尺寸模版列表与参考图上传管理】
+// ═══════════════════════════════════════════════════════
+function renderSizes(){
+  const el=$('sizeList'); el.innerHTML='';
+  S.sizes.forEach(sz=>{
+    const row=document.createElement('div'); row.className='size-item'+(S.activeSize&&S.activeSize.id===sz.id?' active':'')+(sz.zones.length>0?' configured':'');
+    row.innerHTML=`<input type="checkbox" class="si-check" ${sz.checked?'checked':''}><span class="si-name">${sz.name}</span><span class="si-dim">${sz.w}×${sz.h}</span>`;
+    row.querySelector('.si-check').addEventListener('change',e=>{sz.checked=e.target.checked;e.stopPropagation()});
+    row.addEventListener('click',e=>{ if(e.target.classList.contains('si-check'))return; activateSize(sz); goStep(2); });
+    el.appendChild(row);
+  });
+}
+
+function activateSize(sz){
+  S.activeSize=sz; S.curSel=null; renderSizes(); renderZoneList();
+  $('s2SizeName').textContent=sz.name; $('s2SizeDim').textContent=sz.w+'×'+sz.h+'px';
+  $('s2empty').style.display='none'; $('s2content').style.display='block';
+  if(sz.demoImg){ loadDemoCanvas(sz.demoImg); } else { $('canvasWrap').style.display='none'; $('demoUpzone').style.display='block'; }
+  clearSelRect(); const activeTypeBtn=document.querySelector('.type-btn.on');
+  if(activeTypeBtn && ['product','title','deco'].includes(activeTypeBtn.dataset.type)){ populateLayerTagSelect(activeTypeBtn.dataset.type); }
+}
+
+// ═══════════════════════════════════════════════════════
+// 【免 Token 云端自动加载 ＆ Token 锁死更新持久化方案】
+// ═══════════════════════════════════════════════════════
+function buildConfigData(){
+  return S.sizes.map(sz=>({
+    id: sz.id, name: sz.name, width: sz.w, height: sz.h,
+    layers: sz.zones.map(z=>({
+      id: z.id, key: z.layerTag || z.name, type: z.type==='title' ? 'text' : 'image',
+      x: z.x, y: z.y, width: z.w, height: z.h, role: z.type, alignX: z.alignX, alignY: z.alignY, layerTag: z.layerTag || ''
+    })),
+    checked: sz.checked,
+  }));
+}
+
+function applyConfigData(data){
+  if(!Array.isArray(data)) return;
+  data.forEach(tpl=>{
+    const zones = (tpl.layers||[]).map(entry=>({
+      id: entry.id || uid(), type: entry.role || (entry.type==='text' ? 'title' : 'image'),
+      name: entry.key || '区域', x: entry.x, y: entry.y, w: entry.width!==undefined?entry.width:0, h: entry.height!==undefined?entry.height:0,
+      alignX: entry.alignX || 'center', alignY: entry.alignY || 'center', layerTag: entry.layerTag || ''
+    }));
+    let sz = S.sizes.find(s=>s.id===tpl.id) || S.sizes.find(s=>s.name===tpl.name);
+    if(sz){ sz.name = tpl.name; sz.w = tpl.width; sz.h = tpl.height; sz.zones = zones; if(tpl.checked!==undefined) sz.checked = tpl.checked; }
+    else { S.sizes.push({ id: tpl.id || uid(), name: tpl.name, w: tpl.width, h: tpl.height, checked: tpl.checked!==undefined?tpl.checked:true, demoImg: null, zones, layerMap: {} }); }
+  });
+  renderSizes(); if(S.activeSize) activateSize(S.activeSize);
+}
+
+// 免 Token 公开加载逻辑
+async function ghLoadConfig() {
+  setSt('正在自动从 GitHub 同步云端配置…');
+  const url = `https://raw.githubusercontent.com/${GH.owner}/${GH.repo}/${GH.branch}/${GH.path}?t=${Date.now()}`;
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) {
+      if (res.status === 404) {
+        $('fileStatus').textContent = "云端全新，已启用本地默认尺寸"; setSt('初始化完成', true);
+        S.sizes = JSON.parse(JSON.stringify(DEFAULT_SIZES)); renderSizes(); return;
+      }
+      throw new Error('HTTP 状态: ' + res.status);
+    }
+    const text = await res.text();
+    if (text.trim()) { S.sizes = []; applyConfigData(JSON.parse(text)); $('fileStatus').textContent = `已同步最新云端配置`; setSt('云端配置已加载', true); }
+  } catch (err) {
+    console.warn('云端同步失败，降级使用默认预设:', err.message); $('fileStatus').textContent = "网络异常，已载入本地预设"; setSt('已就绪', true);
+    if(S.sizes.length === 0) { S.sizes = JSON.parse(JSON.stringify(DEFAULT_SIZES)); renderSizes(); }
+  }
+}
+
+// 智能缓存过滤写入逻辑（处理 Bad credentials 失效重试机制）
+async function ghSaveConfig() {
+  let token = $('ghToken').value.trim() || localStorage.getItem(STORAGE_KEY) || '';
+  if (!token || token === "你的ghp_开头的真正Token贴在这里") {
+    token = prompt("请输入拥有该仓库写入权限的有效 GitHub Token:");
+    if (!token) { showAlert('保存已取消：未输入有效 Token', 'alertMain'); return; }
+  }
+
+  setSt('正在向 GitHub 写入配置…');
+  const apiUrl = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}`;
+  const headers = { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github+json' };
+
+  let sha = null;
+  try {
+    const getRes = await fetch(apiUrl+`?ref=${GH.branch}`, { headers });
+    if (getRes.status === 401 || getRes.status === 403) { throw new Error('AUTH_ERROR'); }
+    if (getRes.ok) { const j = await getRes.json(); sha = j.sha; }
+  } catch(e) {
+    if(e.message === 'AUTH_ERROR') { return handleTokenExpiry(); }
+  }
+
+  try {
+    const json = JSON.stringify(buildConfigData(), null, 2);
+    const content = btoa(unescape(encodeURIComponent(json)));
+    const body = { message: `Update sizes config ${new Date().toISOString().slice(0,19)}`, content, branch: GH.branch };
+    if(sha) body.sha = sha;
+
+    const putRes = await fetch(apiUrl, { method:'PUT', headers:{...headers,'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    
+    if (putRes.status === 401 || putRes.status === 403) { return handleTokenExpiry(); }
+    if(!putRes.ok) throw new Error('HTTP ' + putRes.status);
+
+    localStorage.setItem(STORAGE_KEY, token); $('ghToken').value = token;
+    $('fileStatus').textContent = `成功同步到云端：${GH.path}`; setSt('保存云端成功', true);
+    showAlert('配置已安全固化至云端', 'alertMain');
+  } catch(err) {
+    showAlert('保存失败: ' + err.message, 'alertMain'); setSt('写入失败');
+  }
+
+  function handleTokenExpiry() {
+    localStorage.removeItem(STORAGE_KEY); $('ghToken').value = '';
+    const newToken = prompt("Token 鉴权失败(Bad credentials)。它可能已过期或权限不足，请重新输入有效的 GitHub Token:");
+    if (newToken) { $('ghToken').value = newToken; localStorage.setItem(STORAGE_KEY, newToken); return ghSaveConfig(); }
+    else { showAlert('保存失败：Token 凭证失效', 'alertMain'); setSt('凭证失效'); }
+  }
+}
+
+function exportConfig(){
+  const blob = new Blob([JSON.stringify(buildConfigData(), null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'entry-tool-sizes.json'; a.click();
+}
+$('ghLoadBtn').addEventListener('click', ghLoadConfig); $('ghSaveBtn').addEventListener('click', ghSaveConfig);
+$('exportConfigBtn').addEventListener('click', exportConfig);
+$('importConfigBtn').addEventListener('click', ()=>$('importConfigInput').click());
+$('importConfigInput').addEventListener('change', e=>{ if(e.target.files[0]) { const reader = new FileReader(); reader.onload = ev=>{ applyConfigData(JSON.parse(ev.target.result)); }; reader.readAsText(e.target.files[0]); } e.target.value=''; });
+
+$('addSizeBtn').addEventListener('click',()=>$('addForm').classList.toggle('open'));
+$('afCancel').addEventListener('click',()=>$('addForm').classList.remove('open'));
+$('afConfirm').addEventListener('click',()=>{
+  const name=$('afName').value.trim(); const w=parseInt($('afW').value),h=parseInt($('afH').value); if(!name||!w||!h) return;
+  S.sizes.push({id:uid(),name,w,h,checked:true,demoImg:null,zones:[],layerMap:{}}); $('addForm').classList.remove('open'); $('afName').value='';$('afW').value='';$('afH').value=''; renderSizes();
+});
+
+// ═══════════════════════════════════════════════════════
+// 【工作台交互：标注图载入及自适应渲染】
+// ═══════════════════════════════════════════════════════
+$('demoUpzoneInput').addEventListener('change', e=>loadDemo(e.target.files[0]));
+$('demoFileInput').addEventListener('change', e=>loadDemo(e.target.files[0]));
+$('demoUpzone').addEventListener('click',()=>$('demoUpzoneInput').click());
+$('changeDemoBtn').addEventListener('click',()=>$('demoFileInput').click());
+
+function loadDemo(file){
+  if(!file||!S.activeSize)return;
+  imgFromUrl(URL.createObjectURL(file)).then(img=>{ const c=toCanvas(img); S.activeSize.demoImg=c; loadDemoCanvas(c); renderSizes(); });
+}
+
+function loadDemoCanvas(imgCanvas){
+  $('demoUpzone').style.display='none'; $('canvasWrap').style.display='inline-block';
+  const body=$('demoPanelBody'); const maxW=body.clientWidth-32||560; const maxH=500;
+  const sc=Math.min(1,maxW/imgCanvas.width,maxH/imgCanvas.height); S.demoScale=sc;
+  const cv=$('demoCanvas'); cv.width=Math.round(imgCanvas.width*sc); cv.height=Math.round(imgCanvas.height*sc);
+  cv.getContext('2d').drawImage(imgCanvas,0,0,cv.width,cv.height);
+  $('demoScaleInfo').textContent=`${imgCanvas.width}×${imgCanvas.height}  ${Math.round(sc*100)}%`; redrawDemoOverlays();
+}
+
+// ═══════════════════════════════════════════════════════
+// 【鼠标拉取矩形选区计算】
+// ═══════════════════════════════════════════════════════
+const cw=$('canvasWrap'); let selEl=null;
+cw.addEventListener('mousedown',e=>{
+  if(!S.activeSize||!S.activeSize.demoImg)return; S.drawing=true; const r=getCanvasRect();
+  S.dragStart={x:e.clientX-r.left,y:e.clientY-r.top}; S.curSel=null; removeSelEl();
+});
+cw.addEventListener('mousemove',e=>{
+  if(!S.drawing)return; const r=getCanvasRect(); const ex=e.clientX-r.left,ey=e.clientY-r.top;
+  const x=Math.min(S.dragStart.x,ex),y=Math.min(S.dragStart.y,ey); const w=Math.abs(ex-S.dragStart.x),h=Math.abs(ey-S.dragStart.y);
+  const sc=S.demoScale; S.curSel={x:Math.round(x/sc),y:Math.round(y/sc),w:Math.round(w/sc),h:Math.round(h/sc)};
+  updateSelEl(x,y,w,h); $('zX').value=S.curSel.x;$('zY').value=S.curSel.y;$('zW').value=S.curSel.w;$('zH').value=S.curSel.h;
+});
+window.addEventListener('mouseup',()=>{S.drawing=false});
+function getCanvasRect(){ return $('demoCanvas').getBoundingClientRect(); }
+function removeSelEl(){ if(selEl){selEl.remove();selEl=null;} }
+function clearSelRect(){ removeSelEl(); S.curSel=null; ['zX','zY','zW','zH'].forEach(id=>{$(id).value=''}); }
+function updateSelEl(x,y,w,h){ if(!selEl){ selEl=document.createElement('div'); selEl.className='sel-rect'; cw.appendChild(selEl); } selEl.style.left=x+'px';selEl.style.top=y+'px'; selEl.style.width=w+'px';selEl.style.height=h+'px'; }
+$('clearSelBtn').addEventListener('click',clearSelRect);
+
+// 区域控制类型切换与对齐点管理
+document.querySelectorAll('.type-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); S.drawType=btn.dataset.type;
+    const showAlign = ['product','title','deco'].includes(S.drawType);
+    $('alignSection').style.display = showAlign ? 'block' : 'none'; $('layerMatchSection').style.display = showAlign ? 'block' : 'none';
+    if(showAlign) populateLayerTagSelect(S.drawType);
+  });
+});
+
+function populateLayerTagSelect(role){
+  const sel=$('zoneLayerTag'); sel.innerHTML='<option value="">-- 自动匹配 --</option>';
+  S.layers.filter(l=>l.role===role).forEach(l=>{ const o=document.createElement('option'); o.value = l.tag || l.name; o.textContent = (l.tag || '(未命名)') + ' — ' + l.name; sel.appendChild(o); });
+}
+
+document.querySelectorAll('.align-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{ document.querySelectorAll('.align-btn').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); S.alignX=btn.dataset.ax; S.alignY=btn.dataset.ay; });
+});
+
+$('addZoneBtn').addEventListener('click',()=>{
+  if(!S.activeSize){showAlert('请先选择尺寸','alertMain');return} const d=S.curSel; if(!d||d.w<4||d.h<4){showAlert('请在参考图上拖拽画框','alertMain');return}
+  const typeNames={product:'产品',title:'文字',deco:'装饰',bg:'背景',safe:'安全区'}; const name=$('zoneName').value.trim()||typeNames[S.drawType];
+  S.activeSize.zones.push({ id:uid(),type:S.drawType,name, x:d.x,y:d.y,w:d.w,h:d.h, alignX:S.alignX,alignY:S.alignY, layerTag: ['product','title','deco'].includes(S.drawType) ? ($('zoneLayerTag').value||'') : '' });
+  clearSelRect(); $('zoneName').value=''; renderZoneList(); renderSizes(); redrawDemoOverlays();
+});
+
+function renderZoneList(){
+  const body=$('zoneListBody'); body.innerHTML=''; if(!S.activeSize)return;
+  S.activeSize.zones.forEach(z=>{
+    const el=document.createElement('div'); el.className='zt';
+    el.innerHTML=`<div class="dot dot-${z.type}"></div><span class="ztn">${z.name} <span style="color:var(--text3);font-size:10px">${z.layerTag?'→ '+z.layerTag:''}</span></span><span style="font-size:10px;color:var(--text3)">${z.w}×${z.h}</span><span class="ztd">×</span>`;
+    el.querySelector('.ztd').addEventListener('click',e=>{ e.stopPropagation(); S.activeSize.zones=S.activeSize.zones.filter(zz=>zz.id!==z.id); renderZoneList(); renderSizes(); redrawDemoOverlays(); });
+    body.appendChild(el);
+  });
+}
+
+function redrawDemoOverlays(){
+  cw.querySelectorAll('.zone-overlay').forEach(el=>el.remove()); if(!S.activeSize)return; const sc=S.demoScale;
+  S.activeSize.zones.forEach(z=>{
+    const div=document.createElement('div'); div.className=`zone-overlay zo-${z.type}`; div.style.cssText=`left:${z.x*sc}px;top:${z.y*sc}px;width:${z.w*sc}px;height:${z.h*sc}px`;
+    const lbl=document.createElement('div'); lbl.className=`zone-label zl-${z.type}`; lbl.textContent=z.name; div.appendChild(lbl); cw.appendChild(div);
+  });
+}
+
+function goStep(n){
+  document.querySelectorAll('.step-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.step)===n));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('active',p.id==='pane'+n));
+  if(n===2&&S.activeSize) activateSize(S.activeSize);
+}
+
+// ═══════════════════════════════════════════════════════
+// 【核心渲染：DPR 高清抗锯齿合成矩阵机制】
+// ═══════════════════════════════════════════════════════
+$('generateBtn').addEventListener('click',async ()=>{
+  if(!S.src){showAlert('请先解析源文件','alertMain');return} const targets=S.sizes.filter(s=>s.checked); if(!targets.length){showAlert('请至少选择一个尺寸','alertMain');return}
+  S.results=[]; setSt('正在批量生产…');
+  for(const sz of targets){ const c=await renderSize(sz); S.results.push({name:sz.name,w:sz.w,h:sz.h,canvas:c}); }
+  showResults(); goStep(3); setSt(`成功生成 ${S.results.length} 张超清画质图`,true);
+});
+
+async function renderSize(sz){
+  const out=document.createElement('canvas'); const dpr = window.devicePixelRatio || 1;
+  out.width = sz.w * dpr; out.height = sz.h * dpr; out.style.width = sz.w + 'px'; out.style.height = sz.h + 'px';
+  const ctx=out.getContext('2d'); ctx.scale(dpr, dpr); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+
+  const demoW=sz.demoImg?sz.demoImg.width:sz.w; const demoH=sz.demoImg?sz.demoImg.height:sz.h;
+  const productZoneMap = matchZonesToLayers(sz.zones.filter(z=>z.type==='product'), S.layers.filter(l=>l.role==='product' && l.canvas));
+  const titleZoneMap   = matchZonesToLayers(sz.zones.filter(z=>z.type==='title'), S.layers.filter(l=>l.role==='title' && l.canvas));
+  const decoZoneMap    = matchZonesToLayers(sz.zones.filter(z=>z.type==='deco'), S.layers.filter(l=>l.role==='deco' && l.canvas));
+
+  for(const l of S.layers){
+    if(l.role==='none' || !l.canvas) continue; const op = (l.opacity!==undefined ? l.opacity : 100) / 100; if(op <= 0) continue;
+    ctx.save(); ctx.globalAlpha = op;
+    if(l.role==='bg'){ drawCover(ctx, l.canvas, 0,0, sz.w, sz.h, 'center','center'); }
+    else if(l.role==='product'){
+      const tr = getTrimmedCanvas(l); const zone = productZoneMap.get(l);
+      if(zone){ drawContainAnchored(ctx, tr.canvas, zone.x/demoW*sz.w, zone.y/demoH*sz.h, zone.w/demoW*sz.w, zone.h/demoH*sz.h, zone.alignX, zone.alignY); }
+      else { const sc=Math.min(sz.w/S.src.w, sz.h/S.src.h); ctx.drawImage(tr.canvas, (l.x+tr.x)*sc, (l.y+tr.y)*sc, tr.w*sc, tr.h*sc); }
+    } else if(l.role==='title'){
+      const tr = getTrimmedCanvas(l); const zone = titleZoneMap.get(l); const to = l.textOverride; const useText = to && to.enabled && to.text;
+      if(zone){
+        const zx=zone.x/demoW*sz.w, zy=zone.y/demoH*sz.h, zw=zone.w/demoW*sz.w, zh=zone.h/demoH*sz.h;
+        if(useText){ drawReplacementText(ctx, to, Math.min(zw/tr.w, zh/tr.h), zx+zw/2, zy+zh/2, zw); }
+        else { const sc=Math.min(zw/tr.w, zh/tr.h); ctx.drawImage(tr.canvas, zx+(zw-tr.w*sc)/2, zy+(zh-tr.h*sc)/2, tr.w*sc, tr.h*sc); }
+      } else {
+        const sc=Math.min(sz.w/S.src.w, sz.h/S.src.h);
+        if(useText){ drawReplacementText(ctx, to, sc, (l.x+tr.x+tr.w/2)*sc, (l.y+tr.y+tr.h/2)*sc, tr.w*sc); }
+        else { ctx.drawImage(tr.canvas, (l.x+tr.x)*sc, (l.y+tr.y)*sc, tr.w*sc, tr.h*sc); }
+      }
+    } else if(l.role==='deco'){
+      const tr = getTrimmedCanvas(l); const zone = decoZoneMap.get(l);
+      if(zone){ drawContainAnchored(ctx, tr.canvas, zone.x/demoW*sz.w, zone.y/demoH*sz.h, zone.w/demoW*sz.w, zone.h/demoH*sz.h, zone.alignX, zone.alignY); }
+      else { const sc=Math.min(sz.w/S.src.w, sz.h/S.src.h); ctx.drawImage(l.canvas, l.x*sc, l.y*sc, l.w*sc, l.h*sc); }
+    }
+    ctx.restore();
+  }
+  return out;
+}
+
+function matchZonesToLayers(zones, layers){
+  const map = new Map(); const used = new Set();
+  for(const l of layers){ const z = zones.find(zz=>zz.layerTag && zz.layerTag===l.tag && !used.has(zz.id)); if(z){ map.set(l,z); used.add(z.id); } }
+  const rZ = zones.filter(z=>!used.has(z.id)); const rL = layers.filter(l=>!map.has(l));
+  for(let i=0; i<rL.length && i<rZ.length; i++){ map.set(rL[i], rZ[i]); } return map;
+}
+
+function drawReplacementText(ctx, to, scale, cx, cy, maxWidth){
+  const fontSizePx = Math.max(6, Math.round((to.size||24) * scale)); ctx.save();
+  ctx.font = `${to.bold?'bold':'normal'} ${fontSizePx}px ${to.font||'sans-serif'}`; ctx.fillStyle = to.color || '#000000';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const lines = to.text.split('\n'); const lh = fontSizePx * 1.25;
+  let y = cy - (lh * lines.length)/2 + lh/2; for(const line of lines){ ctx.fillText(line, cx, y, maxWidth*1.05); y += lh; } ctx.restore();
+}
+
+function getTrimmedCanvas(l){
+  if(l._trimmed) return l._trimmed; const src = l.canvas; const w = src.width, h = src.height; if(w===0||h===0) return l._trimmed={canvas:src,x:0,y:0,w,h};
+  let imgData; try{ imgData = src.getContext('2d').getImageData(0,0,w,h).data; }catch(e){ return l._trimmed={canvas:src,x:0,y:0,w,h}; }
+  let minX=w, minY=h, maxX=-1, maxY=-1;
+  for(let y=0;y<h;y++){ for(let x=0;x<w;x++){ if(imgData[(y*w+x)*4+3]>0){ if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; } } }
+  if(maxX<0) return l._trimmed={canvas:src,x:0,y:0,w,h}; const tw=maxX-minX+1, th=maxY-minY+1;
+  const tc=document.createElement('canvas'); tc.width=tw; tc.height=th; tc.getContext('2d').drawImage(src, minX,minY,tw,th, 0,0,tw,th);
+  return l._trimmed = {canvas:tc, x:minX, y:minY, w:tw, h:th};
+}
+
+function drawCover(ctx, src, dx,dy, dw,dh, alignX='center', alignY='center'){
+  const sw=src.width, sh=src.height; const sc=Math.max(dw/sw, dh/sh); const scaledW=sw*sc, scaledH=sh*sc;
+  let ox=(scaledW-dw)/2, oy=(scaledH-dh)/2; if(alignX==='left')ox=0; else if(alignX==='right')ox=scaledW-dw; if(alignY==='top')oy=0; else if(alignY==='bottom')oy=scaledH-dh;
+  ctx.save(); ctx.beginPath(); ctx.rect(dx,dy,dw,dh); ctx.clip(); ctx.drawImage(src, dx-ox, dy-oy, scaledW, scaledH); ctx.restore();
+}
+
+function drawContainAnchored(ctx, src, zx,zy,zw,zh, alignX='center', alignY='center'){
+  const sw=src.width, sh=src.height; const sc=Math.min(zw/sw, zh/sh); const scaledW=sw*sc, scaledH=sh*sc;
+  let ax = alignX==='left' ? zx : alignX==='right' ? zx+zw : zx+zw/2; let ay = alignY==='top' ? zy : alignY==='bottom'? zy+zh : zy+zh/2;
+  let ix = alignX==='left' ? 0 : alignX==='right' ? scaledW : scaledW/2; let iy = alignY==='top' ? 0 : alignY==='bottom'? scaledH : scaledH/2;
+  ctx.drawImage(src, ax-ix, ay-iy, scaledW, scaledH);
+}
+
+// 展示与批量打包无损下载
+function showResults(){
+  const grid=$('resultsGrid'); grid.innerHTML='';
+  S.results.forEach(r=>{
+    const card=document.createElement('div'); card.className='res-card'; const maxThumb=280; const sc=Math.min(1,maxThumb/r.w,maxThumb/r.h);
+    const tc=document.createElement('canvas'); tc.width=Math.round(r.w*sc); tc.height=Math.round(r.h*sc); tc.getContext('2d').drawImage(r.canvas,0,0,tc.width,tc.height); tc.style.width='100%';
+    const foot=document.createElement('div'); foot.className='res-card-foot'; foot.innerHTML=`<div><div class="res-name">${r.name}</div><div class="res-dim">${r.w}×${r.h}px</div></div>`;
+    const dlBtn=document.createElement('button'); dlBtn.className='btn btn-sm'; dlBtn.textContent='↓ 下载'; dlBtn.addEventListener('click',()=>dlCanvas(r.canvas,`${r.name}_${r.w}x${r.h}.png`));
+    foot.appendChild(dlBtn); card.appendChild(tc); card.appendChild(foot); grid.appendChild(card);
+  });
+  $('s3empty').style.display='none'; $('s3content').style.display='block'; $('dlAllBtn').style.display='block';
+}
+
+$('dlAllBtn').addEventListener('click',()=>{ S.results.forEach((r,i)=>setTimeout(()=>dlCanvas(r.canvas,`${r.name}_${r.w}x${r.h}.png`),i*200)); });
+function dlCanvas(canvas,name){ const a=document.createElement('a'); a.download=name; a.href=canvas.toDataURL('image/png'); a.click(); }
+
+// 基础辅助
+function toCanvas(img){ const c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight; c.getContext('2d').drawImage(img,0,0); return c; }
+function imgFromUrl(url){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=url; }); }
+function setSt(msg,ok=false){ $('stText').textContent=msg; $('stDot').className=ok?'dot-ok':'dot-idle'; }
+function showAlert(msg,id){ const el=$(id); el.textContent=msg; el.className='alert alert-warn show'; setTimeout(()=>el.classList.remove('show'),3000); }
+
+// 页面异步就绪初始化
+if (localStorage.getItem(STORAGE_KEY)) { $('ghToken').value = localStorage.getItem(STORAGE_KEY); }
+ghLoadConfig();
+</script>
+</body>
+</html>
