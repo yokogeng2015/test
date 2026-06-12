@@ -245,6 +245,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn btn-sm" id="afCancel">取消</button>
       </div>
     </div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="btn btn-ghost btn-sm" id="connectFileBtn" style="flex:1" title="选择本地配置JSON文件（如git仓库里的 entry-tool-sizes.json）">📂 连接配置文件</button>
+      <button class="btn btn-ghost btn-sm" id="saveFileBtn" style="flex:1" disabled title="写回已连接的配置文件">💾 保存</button>
+    </div>
+    <div id="fileStatus" style="font-size:10px;color:var(--text3);margin-top:4px"></div>
+    <div style="display:flex;gap:6px;margin-top:4px">
+      <button class="btn btn-ghost btn-sm" id="exportConfigBtn" style="flex:1" title="导出为JSON文件下载（不支持文件句柄的浏览器可用此方式）">⬇ 下载配置</button>
+      <button class="btn btn-ghost btn-sm" id="importConfigBtn" style="flex:1" title="从本地选择并导入一次性JSON">⬆ 导入文件</button>
+      <input type="file" id="importConfigInput" accept=".json" style="display:none">
+    </div>
   </div>
 
   <!-- Generate footer -->
@@ -891,7 +901,158 @@ function activateSize(sz){
   }
 }
 
-// add size
+// ═══════════════════════════════════════════════════════
+// CONFIG (sizes + zones) — JSON, persisted to a local file (e.g. in your git repo)
+// ═══════════════════════════════════════════════════════
+// Schema per size (matches user-provided structure, with extra fields for
+// full round-trip: role/alignX/alignY/layerTag are tool-internal extensions):
+// {
+//   id, name, width, height,
+//   layers: [
+//     { id, key, type: "image"|"text", x, y, width, height,
+//       maxWidth?, fontSize?,            // for type:"text"
+//       role, alignX, alignY, layerTag } // internal extensions
+//   ]
+// }
+function buildConfigData(){
+  return S.sizes.map(sz=>({
+    id: sz.id,
+    name: sz.name,
+    width: sz.w,
+    height: sz.h,
+    layers: sz.zones.map(z=>{
+      const entry = {
+        id: z.id,
+        key: z.layerTag || z.name,
+        type: z.type==='title' ? 'text' : 'image',
+        x: z.x, y: z.y,
+        width: z.w, height: z.h,
+      };
+      if(z.type==='title'){
+        entry.maxWidth = z.w;
+        const layer = S.layers.find(l=>l.role==='title' && (l.tag===z.layerTag));
+        if(layer && layer.textOverride && layer.textOverride.size){
+          entry.fontSize = layer.textOverride.size;
+        }
+      }
+      entry.role = z.type;
+      entry.alignX = z.alignX;
+      entry.alignY = z.alignY;
+      entry.layerTag = z.layerTag || '';
+      return entry;
+    }),
+    checked: sz.checked,
+  }));
+}
+
+function applyConfigData(data){
+  if(!Array.isArray(data)) throw new Error('JSON 根节点应为数组');
+  data.forEach(tpl=>{
+    const zones = (tpl.layers||[]).map(entry=>({
+      id: entry.id || uid(),
+      type: entry.role || (entry.type==='text' ? 'title' : 'image'),
+      name: entry.key || '区域',
+      x: entry.x, y: entry.y,
+      w: entry.width!==undefined?entry.width:(entry.maxWidth||0),
+      h: entry.height!==undefined?entry.height:0,
+      alignX: entry.alignX || 'center',
+      alignY: entry.alignY || 'center',
+      layerTag: entry.layerTag || entry.key || '',
+    }));
+
+    let sz = S.sizes.find(s=>s.id===tpl.id) || S.sizes.find(s=>s.name===tpl.name);
+    if(sz){
+      sz.name = tpl.name; sz.w = tpl.width; sz.h = tpl.height; sz.zones = zones;
+      if(tpl.checked!==undefined) sz.checked = tpl.checked;
+    } else {
+      S.sizes.push({
+        id: tpl.id || uid(), name: tpl.name, w: tpl.width, h: tpl.height,
+        checked: tpl.checked!==undefined?tpl.checked:true,
+        demoImg: null, zones, layerMap: {bg:null,product:null,title:null},
+      });
+    }
+  });
+  renderSizes();
+  if(S.activeSize) activateSize(S.activeSize);
+}
+
+// ── File System Access API (Chrome/Edge): connect a local file once,
+// then "保存" writes back to it directly — perfect for a file inside your git repo.
+let configFileHandle = null;
+const fsApiSupported = 'showOpenFilePicker' in window;
+
+async function connectConfigFile(){
+  if(!fsApiSupported){
+    showAlert('当前浏览器不支持直连本地文件（请用 Chrome/Edge），改用下方"下载/导入文件"', 'alertMain');
+    return;
+  }
+  try{
+    const [handle] = await window.showOpenFilePicker({
+      types:[{description:'JSON', accept:{'application/json':['.json']}}],
+      excludeAcceptAllOption:false,
+    });
+    configFileHandle = handle;
+    const file = await handle.getFile();
+    const text = await file.text();
+    if(text.trim()){
+      applyConfigData(JSON.parse(text));
+      setSt(`已连接并读取 ${handle.name}`, true);
+    } else {
+      setSt(`已连接 ${handle.name}（空文件，保存时将写入当前配置）`, true);
+    }
+    $('fileStatus').textContent = '已连接：' + handle.name;
+    $('saveFileBtn').disabled = false;
+  }catch(err){
+    if(err.name !== 'AbortError') showAlert('连接文件失败：'+err.message, 'alertMain');
+  }
+}
+
+async function saveConfigFile(){
+  if(!configFileHandle) return;
+  try{
+    const writable = await configFileHandle.createWritable();
+    await writable.write(JSON.stringify(buildConfigData(), null, 2));
+    await writable.close();
+    setSt(`已保存到 ${configFileHandle.name}`, true);
+  }catch(err){
+    showAlert('保存失败：'+err.message, 'alertMain');
+  }
+}
+
+// ── Fallback for browsers without File System Access API: download / one-shot import
+function exportConfig(){
+  const json = JSON.stringify(buildConfigData(), null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'entry-tool-sizes.json';
+  a.click();
+  setSt('已下载配置 JSON', true);
+}
+
+function importConfig(file){
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      applyConfigData(JSON.parse(e.target.result));
+      setSt(`配置已导入（注意：demo 参考图需重新上传）`, true);
+    }catch(err){
+      showAlert('配置导入失败：'+err.message, 'alertMain');
+    }
+  };
+  reader.readAsText(file);
+}
+
+$('connectFileBtn').addEventListener('click', connectConfigFile);
+$('saveFileBtn').addEventListener('click', saveConfigFile);
+$('exportConfigBtn').addEventListener('click', exportConfig);
+$('importConfigBtn').addEventListener('click', ()=>$('importConfigInput').click());
+$('importConfigInput').addEventListener('change', e=>{
+  if(e.target.files[0]) importConfig(e.target.files[0]);
+  e.target.value='';
+});
+
+
 $('addSizeBtn').addEventListener('click',()=>$('addForm').classList.toggle('open'));
 $('afCancel').addEventListener('click',()=>$('addForm').classList.remove('open'));
 $('afConfirm').addEventListener('click',()=>{
@@ -1459,4 +1620,3 @@ renderSizes();
 </script>
 </body>
 </html>
-
