@@ -863,46 +863,69 @@ function drawCompositePreview(){
 // SIZES
 // ═══════════════════════════════════════════════════════
 function renderSizes(){
-  const el = $('sizeList'); el.innerHTML='';
-  S.sizes.forEach(s=>{
+  const el = $('sizeList'); 
+  el.innerHTML = '';
+  
+  S.sizes.forEach(s => {
     const item = document.createElement('div');
-    item.className = 'size-item' + (S.activeSize&&S.activeSize.id===s.id?' active':'') + (s.zones.length?' configured':'');
+    item.className = 'size-item' + (S.activeSize && S.activeSize.id === s.id ? ' active' : '') + (s.zones.length ? ' configured' : '');
     
-    // ✨ 修复核心：只要你不是点中复选框(INPUT)或删除按钮(si-del)，其他任何地方（名字、分辨率、空白处）都能正常触发选择！
-    item.addEventListener('click', e=>{ 
-      if(e.target.tagName !== 'INPUT' && !e.target.classList.contains('si-del')){
-        selectSize(s);
-      } 
+    // ✨ 终极修复方案：绑定整行点击，并精准识别点击目标
+    item.addEventListener('click', e => {
+      // 1. 如果点中的是删除按钮，直接拦截，不执行切换
+      if (e.target.classList.contains('si-del')) {
+        return; 
+      }
+      // 2. 如果点中的是左侧复选框，让它走复选框自带的勾选逻辑，不执行切换
+      if (e.target.tagName === 'INPUT') {
+        return; 
+      }
+      
+      // 3. 只要不是上面两种情况（点到文字、分辨率、卡片空白），100% 触发选择和切步骤
+      selectSize(s);
     });
 
-    const chk = document.createElement('input'); chk.type='checkbox'; chk.className='si-check'; chk.checked=!!s.checked;
-    chk.addEventListener('change', e=>{ s.checked = e.target.checked; });
-    
-    const name = document.createElement('span'); name.className='si-name'; name.textContent=s.name;
-    const dim = document.createElement('span'); dim.className='si-dim'; dim.textContent=`${s.w}x${s.h}`;
-    
-    // 右侧删除按钮
+    // 左侧复选框
+    const chk = document.createElement('input'); 
+    chk.type = 'checkbox'; 
+    chk.className = 'si-check'; 
+    chk.checked = !!s.checked;
+    chk.addEventListener('change', e => { s.checked = e.target.checked; });
+
+    // 尺寸名字
+    const name = document.createElement('span'); 
+    name.className = 'si-name'; 
+    name.textContent = s.name;
+
+    // 分辨率
+    const dim = document.createElement('span'); 
+    dim.className = 'si-dim'; 
+    dim.textContent = `${s.w}x${s.h}`;
+
+    // 右侧删除按钮 (×)
     const del = document.createElement('span'); 
-    del.className = 'si-del'; // 确保这里有 si-del 类名用来做点击拦截
+    del.className = 'si-del';
     del.textContent = '×'; 
-    del.style.cssText = 'color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px;margin-left:auto;font-weight:bold;display:inline-block;';
+    del.style.cssText = 'color:var(--text3);cursor:pointer;font-size:16px;padding:0 6px;margin-left:auto;font-weight:bold;display:inline-block;z-index:10;';
     
     del.addEventListener('mouseenter', () => { del.style.color = '#ff4d4f'; });
     del.addEventListener('mouseleave', () => { del.style.color = 'var(--text3)'; });
     
-    del.addEventListener('click', e=>{
-      e.stopPropagation(); // 阻止事件冒泡，不触发整行的 selectSize
-      if(!confirm(`确定要删除尺寸【${s.name}】吗？`)) return;
+    // 点击删除的独立逻辑
+    del.addEventListener('click', e => {
+      e.stopPropagation(); // 阻止冒泡到 item 上
+      if (!confirm(`确定要删除尺寸【${s.name}】吗？`)) return;
       
-      S.sizes = S.sizes.filter(x=>x.id!==s.id);
-      if(S.activeSize && S.activeSize.id===s.id){
+      S.sizes = S.sizes.filter(x => x.id !== s.id);
+      if (S.activeSize && S.activeSize.id === s.id) {
         S.activeSize = null;
-        $('s2empty').style.display='flex';
-        $('s2content').style.display='none';
+        $('s2empty').style.display = 'flex';
+        $('s2content').style.display = 'none';
       }
       renderSizes();
     });
 
+    // 组装 DOM
     item.appendChild(chk); 
     item.appendChild(name); 
     item.appendChild(dim); 
