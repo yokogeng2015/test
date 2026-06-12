@@ -36,30 +36,6 @@
     "checked": true
   },
   {
-    "id": "ru3ntw",
-    "name": "频道入口 2:1",
-    "width": 375,
-    "height": 188,
-    "layers": [],
-    "checked": false
-  },
-  {
-    "id": "50u360",
-    "name": "方形入口",
-    "width": 375,
-    "height": 375,
-    "layers": [],
-    "checked": false
-  },
-  {
-    "id": "mi1ae7",
-    "name": "竖版 3:4",
-    "width": 375,
-    "height": 500,
-    "layers": [],
-    "checked": false
-  },
-  {
     "id": "utzenv",
     "name": "橱窗图",
     "width": 800,
